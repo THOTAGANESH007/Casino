@@ -46,7 +46,8 @@ phone TEXT,
 password TEXT NOT NULL,
 role user_type NOT NULL DEFAULT 'player',
 created_by INT REFERENCES users(user_id),
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+forgot_password_otp TEXT
 );
 
 -- select * from users;

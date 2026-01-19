@@ -16,7 +16,7 @@ class EmailService:
     
     async def send_email(
         self,
-        to_emails: List[str],
+        to_email: str,
         subject: str,
         body: str,
         html: bool = False
@@ -25,7 +25,7 @@ class EmailService:
         try:
             message = MIMEMultipart("alternative")
             message["From"] = self.smtp_from
-            message["To"] = ", ".join(to_emails)
+            message["To"] = to_email
             message["Subject"] = subject
             
             if html:
@@ -41,11 +41,12 @@ class EmailService:
                 port=self.smtp_port,
                 username=self.smtp_user,
                 password=self.smtp_password,
-                use_tls=True
+                use_tls=True,
+                start_tls=False
             )
             return True
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            print(f"Failed to send email to {to_email}: {e}")
             return False
     
     async def send_activation_email(self, to_email: str, user_name: str) -> bool:
@@ -61,7 +62,7 @@ class EmailService:
             </body>
         </html>
         """
-        return await self.send_email([to_email], subject, body, html=True)
+        return await self.send_email(to_email, subject, body, html=True)
     
     async def send_kyc_approval_email(self, to_email: str, user_name: str) -> bool:
         """Send KYC approval email"""
@@ -76,7 +77,7 @@ class EmailService:
             </body>
         </html>
         """
-        return await self.send_email([to_email], subject, body, html=True)
+        return await self.send_email(to_email, subject, body, html=True)
     
     async def send_kyc_rejection_email(self, to_email: str, user_name: str, reason: str = None) -> bool:
         """Send KYC rejection email"""
@@ -93,6 +94,6 @@ class EmailService:
             </body>
         </html>
         """
-        return await self.send_email([to_email], subject, body, html=True)
+        return await self.send_email(to_email, subject, body, html=True)
 
 email_service = EmailService()

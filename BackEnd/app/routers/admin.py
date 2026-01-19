@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.utils.security import get_password_hash
 from ..database import get_db
@@ -153,16 +153,6 @@ async def update_region_tax(
 
 # ============= USER & KYC MANAGEMENT =============
 
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models.user import User, UserType
-from ..schemas.user import UserResponse
-from ..utils.dependencies import require_tenant_admin
-
-# ... imports ...
-
 @router.get("/users-admin", response_model=List[UserResponse])
 async def get_all_users_admin(
     is_active: Optional[bool] = None,
@@ -224,7 +214,7 @@ async def approve_kyc(
     
     # Mark KYC as verified
     kyc.verified_status = True
-    kyc.verified_at = datetime.utcnow()
+    kyc.verified_at = datetime.now(timezone.utc)
     
     db.commit()
     

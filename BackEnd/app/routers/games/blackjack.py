@@ -12,7 +12,7 @@ from ...services.game_engines.blackjack_engine import BlackjackEngine
 
 router = APIRouter(prefix="/games/blackjack", tags=["Blackjack"])
 
-# Store active game sessions in memory (in production, use Redis)
+# Store active game sessions in memory (in production => Redis)
 active_games: Dict[int, BlackjackEngine] = {}
 
 @router.post("/start")

@@ -24,7 +24,7 @@ class User(Base):
     email = Column(String, nullable=False, index=True)
     phone = Column(String)
     password = Column(String, nullable=False)
-    role = Column(Enum(UserType), default=UserType.player)
+    role = Column(Enum(UserType, name="user_type", create_type=False, native_enum=True), default=UserType.player)
     tenant_id = Column(Integer, ForeignKey("tenants.tenant_id"), index=True)
     is_active = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
@@ -41,7 +41,7 @@ class UserKYC(Base):
     
     kyc_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), unique=True)
-    document_type = Column(Enum(DocType))
+    document_type = Column(Enum(DocType, name="doc_type", create_type=False, native_enum=True))
     document_number = Column(String)
     verified_status = Column(Boolean, default=False)
     verified_at = Column(TIMESTAMP(timezone=True))

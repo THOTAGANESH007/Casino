@@ -45,7 +45,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                       to="/wallet"
-                      className="px-4 py-2 rounded-lg hover:bg-pink-300 transition-colors"
+                      className="px-4 py-2 rounded-lg bg-pink-300 transition-colors"
                     >
                       Wallet
                     </Link>

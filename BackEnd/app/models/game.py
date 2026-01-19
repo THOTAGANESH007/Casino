@@ -61,7 +61,7 @@ class Bet(Base):
     wallet_id = Column(Integer, ForeignKey("wallet.wallet_id"))
     bet_amount = Column(Numeric(18, 2))
     payout_amount = Column(Numeric(18, 2))
-    bet_status = Column(Enum(BetStatus, native_enum=False, length=50), default=BetStatus.placed)
+    bet_status = Column(Enum(BetStatus, name="bet_statuses", create_type=False, native_enum=True), default=BetStatus.placed)
     
     # Relationships
     round = relationship("GameRound", back_populates="bets")

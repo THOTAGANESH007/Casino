@@ -1,0 +1,174 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./src/context/AuthContext.jsx";
+import ProtectedRoute from "./src/components/common/ProtectedRoute.jsx";
+import Navbar from "./src/components/common/Navbar.jsx";
+
+// Auth Components
+import Signup from "./src/components/auth/Signup";
+import Login from "./src/components/auth/Login";
+import RegionSelect from "./src/components/auth/RegionSelect";
+import KYCSubmit from "./src/components/auth/KYCSubmit";
+import PendingVerification from "./src/components/auth/PendingVerification";
+
+// Admin Components
+import AdminDashboard from "./src/components/admin/AdminDashboard";
+import OwnerDashboard from "./src/components/admin/OwnerDashboard";
+
+// Wallet Components
+import WalletOverview from "./src/components/wallet/WalletOverview";
+
+// Game Components
+import GamesList from "./src/components/games/GamesList";
+import Blackjack from "./src/components/games/Blackjack";
+import Dice from "./src/components/games/Dice";
+import Slots from "./src/components/games/Slots";
+import Roulette from "./src/components/games/Roulette";
+import FantasyCricket from "./src/components/games/FantasyCricket";
+import Crash from "./src/components/games/Crash";
+import Mines from "./src/components/games/Mines";
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Navbar />
+          <main>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Navigate to="/games" replace />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/login" element={<Login />} />
+
+              {/* Onboarding Routes */}
+              <Route
+                path="/select-region"
+                element={
+                  <ProtectedRoute>
+                    <RegionSelect />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/submit-kyc"
+                element={
+                  <ProtectedRoute>
+                    <KYCSubmit />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/pending-verification"
+                element={<PendingVerification />}
+              />
+
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Casino Owner Route */}
+              <Route
+                path="/owner-dashboard"
+                element={
+                  <ProtectedRoute>
+                    <OwnerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Wallet Routes */}
+              <Route
+                path="/wallet"
+                element={
+                  <ProtectedRoute>
+                    <WalletOverview />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Game Routes */}
+              <Route
+                path="/games"
+                element={
+                  <ProtectedRoute>
+                    <GamesList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/games/blackjack"
+                element={
+                  <ProtectedRoute>
+                    <Blackjack />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/games/dice"
+                element={
+                  <ProtectedRoute>
+                    <Dice />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/games/slots"
+                element={
+                  <ProtectedRoute>
+                    <Slots />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/games/roulette"
+                element={
+                  <ProtectedRoute>
+                    <Roulette />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/games/fantasy-cricket"
+                element={
+                  <ProtectedRoute>
+                    <FantasyCricket />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/games/crash"
+                element={
+                  <ProtectedRoute>
+                    <Crash />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/games/mines"
+                element={
+                  <ProtectedRoute>
+                    <Mines />
+                  </ProtectedRoute>
+                }
+              />
+              {/* 404 - Redirect to games */}
+              <Route path="*" element={<Navigate to="/games" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
+
+export default App;

@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import { GAMES } from "../../utils/constants";
 import { useWallet } from "../../hooks/useWallet";

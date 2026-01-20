@@ -1,5 +1,3 @@
-import React from "react";
-
 const SuccessMessage = ({ message, onClose }) => {
   if (!message) return null;
 

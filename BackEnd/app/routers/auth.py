@@ -11,7 +11,7 @@ from ..services.wallet_service import wallet_service
 from ..config import settings
 from ..models.tenant import TenantRegion
 from ..models.user import UserKYC
-from ..services import email_service
+from ..services.email_service import email_service
 import random
 import string
 from ..schemas.user import ForgotPasswordRequest, ResetPasswordRequest
@@ -175,10 +175,10 @@ async def forgot_password(
     db: Session = Depends(get_db)
 ):
     """Generate OTP and send to email"""
+    print(request)
     user = db.query(User).filter(User.email == request.email).first()
     
     if not user:
-        # Security: Don't reveal if user exists, just pretend it worked
         return {"message": "If the email exists, an OTP has been sent."}
     
     # Generate 6-digit OTP

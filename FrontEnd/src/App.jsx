@@ -27,6 +27,7 @@ import FantasyCricket from "./src/components/games/FantasyCricket";
 import Crash from "./src/components/games/Crash";
 import Mines from "./src/components/games/Mines";
 import ForgotPassword from "./src/components/auth/ForgotPassword.jsx";
+import UserProfile from "./src/components/user/UserProfile.jsx";
 
 const App = () => {
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { blackjackAPI } from "../../api/games";
 import { useWallet } from "../../hooks/useWallet";
 import ErrorMessage from "../common/ErrorMessage";

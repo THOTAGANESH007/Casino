@@ -29,12 +29,12 @@ export const authAPI = {
   },
 
   forgotPassword: async (email) => {
-    const response = await axios.post(`${API_URL}/forgot-password`, { email });
+    const response = await api.post("/auth/forgot-password",{email});
     return response.data;
   },
 
   resetPassword: async (data) => {
-    const response = await axios.post(`${API_URL}/reset-password`, data);
+    const response = await api.post("/auth/reset-password", data);
     return response.data;
   },
 };

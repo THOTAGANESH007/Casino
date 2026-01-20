@@ -73,9 +73,9 @@ class FullUserProfile(BaseModel):
     stats: UserProfileStats
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: str
 
 class ResetPasswordRequest(BaseModel):
-    email: EmailStr
+    email: str
     otp: str
     new_password: str

@@ -1,5 +1,3 @@
-import React from "react";
-
 const Card = ({ children, className = "", hover = false }) => {
   const baseClass = "bg-white rounded-lg shadow-md p-6";
   const hoverClass = hover

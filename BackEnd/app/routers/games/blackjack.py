@@ -23,19 +23,20 @@ async def start_blackjack_game(
 ):
     """Start a new blackjack game"""
     # 1. Check for active session
-    active_session = db.query(GameSession).filter(
-        GameSession.user_id == current_user.user_id,
-        GameSession.ended_at.is_(None)
-    ).first()
+    
+    # active_session = db.query(GameSession).filter(
+    #     GameSession.user_id == current_user.user_id,
+    #     GameSession.ended_at.is_(None)
+    # ).first()
 
-    if active_session:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "You have an unfinished game.",
-                "session_id": active_session.session_id
-            }
-        )
+    # if active_session:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail={
+    #             "message": "You have an unfinished game.",
+    #             "session_id": active_session.session_id
+    #         }
+    #     )
     
     # Get or create blackjack game entry
     game = db.query(Game).filter(Game.game_name == "Blackjack").first()

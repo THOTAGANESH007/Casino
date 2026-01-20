@@ -96,4 +96,19 @@ class EmailService:
         """
         return await self.send_email(to_email, subject, body, html=True)
 
+    async def send_otp_email(self, to_email: str, otp: str) -> bool:
+        """Send Forgot Password OTP"""
+        subject = "Reset Your Password - Casino Platform"
+        body = f"""
+        <html>
+            <body>
+                <h2>Password Reset Request</h2>
+                <p>You requested to reset your password.</p>
+                <p>Your One-Time Password (OTP) is:</p>
+                <h1 style="color: #4F46E5; letter-spacing: 5px;">{otp}</h1>
+                <p>If you did not request this, please ignore this email.</p>
+            </body>
+        </html>
+        """
+        return await self.send_email(to_email, subject, body, html=True)
 email_service = EmailService()

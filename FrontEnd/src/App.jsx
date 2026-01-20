@@ -26,6 +26,7 @@ import Roulette from "./src/components/games/Roulette";
 import FantasyCricket from "./src/components/games/FantasyCricket";
 import Crash from "./src/components/games/Crash";
 import Mines from "./src/components/games/Mines";
+import ForgotPassword from "./src/components/auth/ForgotPassword.jsx";
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
               <Route path="/" element={<Navigate to="/games" replace />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               {/* Onboarding Routes */}
               <Route
@@ -60,6 +62,15 @@ const App = () => {
               <Route
                 path="/pending-verification"
                 element={<PendingVerification />}
+              />
+
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
               />
 
               {/* Admin Routes */}

@@ -11,6 +11,10 @@ from ..services.wallet_service import wallet_service
 from ..config import settings
 from ..models.tenant import TenantRegion
 from ..models.user import UserKYC
+from ..services import email_service
+import random
+import string
+from ..schemas.user import ForgotPasswordRequest, ResetPasswordRequest
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -164,3 +168,58 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
     return current_user
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest, 
+    db: Session = Depends(get_db)
+):
+    """Generate OTP and send to email"""
+    user = db.query(User).filter(User.email == request.email).first()
+    
+    if not user:
+        # Security: Don't reveal if user exists, just pretend it worked
+        return {"message": "If the email exists, an OTP has been sent."}
+    
+    # Generate 6-digit OTP
+    otp = ''.join(random.choices(string.digits, k=6))
+    
+    # Save to DB
+    user.forgot_password_otp = otp
+    db.commit()
+    
+    # Send Email
+    await email_service.send_otp_email(user.email, otp)
+    
+    return {"message": "OTP sent to your email."}
+
+@router.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest, 
+    db: Session = Depends(get_db)
+):
+    """Verify OTP and reset password"""
+    user = db.query(User).filter(User.email == request.email).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Verify OTP
+    if not user.forgot_password_otp or user.forgot_password_otp != request.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP"
+        )
+    
+    # Hash new password
+    hashed_password = get_password_hash(request.new_password)
+    
+    # Update User
+    user.password = hashed_password
+    user.forgot_password_otp = None  # Clear OTP after use
+    db.commit()
+    
+    return {"message": "Password reset successfully. You can now login."}

@@ -54,7 +54,12 @@ const Navbar = () => {
                     </div>
                   </>
                 )}
-
+                <Link
+                  to="/profile"
+                  className="px-4 py-2 bg-pink-500 rounded-lg"
+                >
+                  Profile
+                </Link>
                 <div className="flex items-center space-x-2 px-4 py-2 bg-pink-300 rounded-lg">
                   <span className="text-2xl">👤</span>
                   <span>{user?.first_name}</span>

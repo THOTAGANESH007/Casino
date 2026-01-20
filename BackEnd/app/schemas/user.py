@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from ..models.user import UserType, DocType
-
+from decimal import Decimal
 class UserSignup(BaseModel):
     first_name: str
     last_name: Optional[str] = None
@@ -41,3 +41,41 @@ class TenantAdminCreate(BaseModel):
     email: str
     password: str
     tenant_id: int
+
+class UserProfileStats(BaseModel):
+    total_wagered: Decimal
+    total_payout: Decimal
+    net_profit: Decimal
+    total_games_played: int
+
+class GameHistoryItem(BaseModel):
+    session_id: int
+    game_name: str
+    started_at: datetime
+    ended_at: Optional[datetime]
+    total_bet: Decimal
+    total_payout: Decimal
+    status: str # "won", "lost", "ongoing"
+
+class ActiveSessionItem(BaseModel):
+    session_id: int
+    game_name: str
+    started_at: datetime
+    current_state: Optional[dict] = None
+
+class FullUserProfile(BaseModel):
+    user_id: int
+    full_name: str
+    email: str
+    tenant_name: str
+    currency: str
+    kyc_status: bool
+    stats: UserProfileStats
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str

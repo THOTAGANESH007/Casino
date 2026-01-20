@@ -91,6 +91,15 @@ const Login = () => {
             placeholder="Enter your password"
           />
 
+          <div className="flex justify-end">
+            <Link
+              to="/forgot-password"
+              className="text-sm font-medium text-primary-600 hover:text-primary-500"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
           <Button
             type="submit"
             variant="blue"

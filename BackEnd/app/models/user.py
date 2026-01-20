@@ -28,7 +28,7 @@ class User(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.tenant_id"), index=True)
     is_active = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    forgot_password_otp = Column(String)
+    forgot_password_otp = Column(String, nullable=True)
     
     # Relationships
     tenant = relationship("Tenant", back_populates="users")

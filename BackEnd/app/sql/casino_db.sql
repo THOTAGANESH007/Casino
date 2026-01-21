@@ -125,6 +125,13 @@ created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 -- GAME PROVIDERS & GAMES
 -- =========================
 
+CREATE TABLE tenant_games (
+    id SERIAL PRIMARY KEY,
+    tenant_id INT NOT NULL REFERENCES tenants(tenant_id),
+    provider_game_id INT NOT NULL REFERENCES provider_games(id),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
 CREATE TABLE game_provider(
 provider_id SERIAL PRIMARY KEY,
 provider_name TEXT UNIQUE NOT NULL,
@@ -135,9 +142,16 @@ created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 
 CREATE TABLE game(
 game_id SERIAL PRIMARY KEY,
-provider_id INT REFERENCES game_provider(provider_id),
 game_name TEXT NOT NULL,
-rtp_percent NUMERIC(5,2)
+rtp_percent NUMERIC(5,2),
+image_url TEXT
+);
+
+CREATE TABLE provider_games (
+    id SERIAL PRIMARY KEY,
+    provider_id INT NOT NULL REFERENCES game_provider(provider_id),
+    game_id INT NOT NULL REFERENCES game(game_id),
+    cost_per_play NUMERIC(10, 4) DEFAULT 0
 );
 
 -- =========================

@@ -19,7 +19,8 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-3xl">🎰</span>
+            <span className="text-3xl"><img src="/msd.webp" alt="MSD Logo"
+    className="w-12.5 h-12.5 rounded-full object-cover border-2 border-gray-200" /> </span>
             <span className="text-xl font-bold">Casino Platform</span>
           </Link>
 

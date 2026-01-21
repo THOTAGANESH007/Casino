@@ -197,7 +197,7 @@ const CatalogManagement = () => {
                   {item.provider_name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap font-mono text-indigo-600">
-                  ${item.cost_per_play.toFixed(4)}
+                  ${item.cost_per_play.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span

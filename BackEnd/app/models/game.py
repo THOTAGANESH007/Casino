@@ -22,10 +22,10 @@ class Game(Base):
     game_id = Column(Integer, primary_key=True, index=True)
     game_name = Column(String)
     rtp_percent = Column(Numeric(5, 2))
-    
+    image_url = Column(String, nullable=True)
     # Relationships
     sessions = relationship("GameSession", back_populates="game")
-
+    provider_variants = relationship("ProviderGame", back_populates="game")
 
 class GameSession(Base):
     __tablename__ = "game_session"
@@ -75,3 +75,31 @@ class GameProvider(Base):
     api_url = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    catalog = relationship("ProviderGame", back_populates="provider")
+
+
+class ProviderGame(Base):
+    """The Catalog: Which provider offers which game and at what cost"""
+    __tablename__ = "provider_games"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("game_provider.provider_id"))
+    game_id = Column(Integer, ForeignKey("game.game_id"))
+    cost_per_play = Column(Numeric(10, 4), default=0) # Cost charged to tenant per game
+    
+    # Relationships
+    provider = relationship("GameProvider", back_populates="catalog")
+    game = relationship("Game", back_populates="provider_variants")
+    tenant_subscriptions = relationship("TenantGame", back_populates="provider_game")
+
+
+class TenantGame(Base):
+    """The Inventory: Which games the tenant has enabled"""
+    __tablename__ = "tenant_games"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.tenant_id"))
+    provider_game_id = Column(Integer, ForeignKey("provider_games.id"))
+    is_active = Column(Boolean, default=True)
+    
+    provider_game = relationship("ProviderGame", back_populates="tenant_subscriptions")

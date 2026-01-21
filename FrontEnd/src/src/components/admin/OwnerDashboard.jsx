@@ -4,6 +4,7 @@ import RegionManagement from "./RegionManagement";
 import CreateAdminForm from "./CreateAdminForm";
 import GameProviderList from "./GameProviderList";
 import TenantAdminList from "./TenantAdminList";
+import CatalogManagement from "./CatalogManagement";
 
 const OwnerDashboard = () => {
   const [activeTab, setActiveTab] = useState("tenants");
@@ -13,6 +14,7 @@ const OwnerDashboard = () => {
     { id: "tenants", label: "Tenants", icon: "🏢" },
     { id: "regions", label: "Regions", icon: "🌍" },
     { id: "providers", label: "Game Providers", icon: "🎮" },
+    { id: "catalog", label: "Catalog", icon: "📚" },
     { id: "createAdmin", label: "Create Admin", icon: "VX" },
   ];
 
@@ -39,6 +41,7 @@ const OwnerDashboard = () => {
         {activeTab === "tenants" && <TenantManagement />}
         {activeTab === "regions" && <RegionManagement />}
         {activeTab === "providers" && <GameProviderList />}
+        {activeTab === "catalog" && <CatalogManagement />}
         {activeTab === "createAdmin" && (
           <div className="space-y-8">
             <CreateAdminForm

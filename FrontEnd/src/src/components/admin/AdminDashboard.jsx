@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import KYCApproval from "./KYCApproval";
 import UserManagement from "./UserManagement";
+import GameMarketplace from "./GameMarketplace";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("kyc");
@@ -8,6 +9,12 @@ const AdminDashboard = () => {
   const tabs = [
     { id: "kyc", label: "KYC Approval", icon: "📄", component: KYCApproval },
     { id: "users", label: "My Players", icon: "👥", component: UserManagement },
+    {
+      id: "marketplace",
+      label: "Game Marketplace",
+      icon: "🏪",
+      component: GameMarketplace,
+    },
   ];
 
   const ActiveComponent = tabs.find((t) => t.id === activeTab)?.component;

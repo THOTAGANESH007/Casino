@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
     DB_NAME: str
+    DATABASE_URL: str
     
     # Security
     SECRET_KEY: str
@@ -21,6 +22,10 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     SMTP_FROM: str
     
+    STRIPE_SECRET_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
+    FRONTEND_URL: str = "http://localhost:5173"
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000"
     

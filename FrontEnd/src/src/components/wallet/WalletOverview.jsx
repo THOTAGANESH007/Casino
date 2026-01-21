@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useWallet } from "../../hooks/useWallet";
 import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
@@ -6,6 +6,8 @@ import Button from "../common/Button";
 import { formatCurrency } from "../../utils/helpers";
 import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
+import { useSearchParams } from "react-router-dom";
+import { walletAPI } from "../../api/wallet";
 
 const WalletOverview = () => {
   const {
@@ -18,7 +20,22 @@ const WalletOverview = () => {
   } = useWallet();
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [statusMsg, setStatusMsg] = useState("");
 
+  useEffect(() => {
+    // Check URL for Stripe redirect params
+    const status = searchParams.get("status");
+    if (status === "success") {
+      setStatusMsg("Deposit Successful! Wallet updated.");
+      walletAPI.getWallets(); // Ensure we have latest balance
+      // Clean URL
+      window.history.replaceState({}, document.title, "/wallet");
+    } else if (status === "cancel") {
+      setStatusMsg("Deposit cancelled.");
+      window.history.replaceState({}, document.title, "/wallet");
+    }
+  }, [searchParams, walletAPI.getWallets]);
   if (loading) return <Loading message="Loading wallet..." />;
 
   return (
@@ -48,6 +65,13 @@ const WalletOverview = () => {
       </div>
 
       <ErrorMessage message={error} />
+      {statusMsg && (
+        <div
+          className={`mb-4 p-4 rounded-lg ${statusMsg.includes("Success") ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+        >
+          {statusMsg}
+        </div>
+      )}
 
       {/* Wallet Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

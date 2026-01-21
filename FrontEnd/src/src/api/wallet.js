@@ -6,6 +6,16 @@ export const walletAPI = {
     return response.data;
   },
 
+  depositStripe: async (amount) => {
+    const response = await api.post("/wallet/deposit/stripe", { amount });
+    return response.data;
+  },
+
+  withdrawStripe: async (amount) => {
+    const response = await api.post("/wallet/withdraw/stripe", { amount });
+    return response.data;
+  },
+
   getWalletByType: async (walletType) => {
     const response = await api.get(`/wallet/${walletType}`);
     return response.data;

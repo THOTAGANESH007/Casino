@@ -53,21 +53,27 @@ export const useWallet = () => {
 
   const deposit = async (amount) => {
     try {
-      await walletAPI.deposit(amount);
-      await fetchWallets();
-      return { success: true };
+      const data = await walletAPI.depositStripe(amount);
+      console.log("Deposit Response Data:", data);
+      // Redirect to Stripe Checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return { success: true, redirect: true };
+      }
+      return { success: false, error: "No checkout URL returned" };
     } catch (err) {
+      console.error("Deposit Error Details:", err.response?.data);
       return {
         success: false,
-        error: err.response?.data?.detail || "Deposit failed",
+        error: err.response?.data?.detail || "Deposit initialization failed",
       };
     }
   };
 
   const withdraw = async (amount) => {
     try {
-      await walletAPI.withdraw(amount);
-      await fetchWallets();
+      await walletAPI.withdrawStripe(amount);
+      await fetchWallets(); // Refresh balance
       return { success: true };
     } catch (err) {
       return {

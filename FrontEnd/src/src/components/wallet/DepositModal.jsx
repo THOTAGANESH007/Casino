@@ -1,51 +1,53 @@
-import React, { useState } from 'react';
-import { useWallet } from '../../hooks/useWallet';
-import Modal from '../common/Modal';
-import ErrorMessage from '../common/ErrorMessage';
-import SuccessMessage from '../common/SuccessMessage';
-import Input from '../common/Input';
-import Button from '../common/Button';
+import React, { useState } from "react";
+import { useWallet } from "../../hooks/useWallet";
+import Modal from "../common/Modal";
+import ErrorMessage from "../common/ErrorMessage";
+import SuccessMessage from "../common/SuccessMessage";
+import Input from "../common/Input";
+import Button from "../common/Button";
 
 const DepositModal = ({ onClose }) => {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const { deposit } = useWallet();
 
   const quickAmounts = [10, 50, 100, 500, 1000];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     const depositAmount = parseFloat(amount);
 
     if (depositAmount <= 0) {
-      setError('Amount must be greater than 0');
+      setError("Amount must be greater than 0");
       return;
     }
 
     setLoading(true);
     const result = await deposit(depositAmount);
-    setLoading(false);
 
-    if (result.success) {
-      setSuccess(`Successfully deposited $${depositAmount.toFixed(2)}`);
-      setTimeout(() => {
-        onClose();
-      }, 2000);
-    } else {
-      setError(result.error);
+    if (!result.redirect) {
+      setLoading(false);
+      if (result.success) {
+        setSuccess(`Successfully deposited $${depositAmount.toFixed(2)}`);
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      } else {
+        setError(result.error);
+      }
     }
   };
 
   return (
     <Modal isOpen={true} onClose={onClose} title="Deposit Funds">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <ErrorMessage message={error} onClose={() => setError('')} />
-        <SuccessMessage message={success} onClose={() => setSuccess('')} />
+        <ErrorMessage message={error} onClose={() => setError("")} />
+        <SuccessMessage message={success} onClose={() => setSuccess("")} />
 
         <Input
           label="Amount ($)"
@@ -88,13 +90,15 @@ const DepositModal = ({ onClose }) => {
             disabled={loading}
             className="flex-1"
           >
-            {loading ? 'Processing...' : 'Deposit'}
+            {loading ? "Processing..." : "Deposit"}
           </Button>
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
           <p className="text-sm text-blue-800">💡 Funds are added instantly</p>
-          <p className="text-sm text-blue-800">🔒 All transactions are secure</p>
+          <p className="text-sm text-blue-800">
+            🔒 All transactions are secure
+          </p>
         </div>
       </form>
     </Modal>

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from decimal import Decimal
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
@@ -7,6 +8,9 @@ from ..models.wallet import WalletType
 from ..schemas.wallet import WalletResponse, WalletDeposit, WalletWithdraw
 from ..utils.dependencies import get_current_active_user
 from ..services.wallet_service import wallet_service
+from ..config import settings
+from ..services.stripe_service import stripe_service
+import stripe
 
 router = APIRouter(prefix="/wallet", tags=["Wallet"])
 
@@ -83,3 +87,98 @@ async def withdraw_from_wallet(
     )
     
     return updated_wallet
+
+
+# 1. Initiate Deposit
+@router.post("/deposit/stripe")
+async def create_deposit_session(
+    deposit_data: WalletDeposit,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Generate Stripe Checkout Link"""
+    if deposit_data.amount < 1:
+        raise HTTPException(status_code=400, detail="Minimum deposit is 1.00")
+
+    try:
+        checkout_url = stripe_service.create_checkout_session(
+            user_id=current_user.user_id,
+            amount=deposit_data.amount
+        )
+        return {"checkout_url": checkout_url}
+    except Exception as e:
+        print(f"STRIPE ERROR: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# 2. Stripe Webhook
+@router.post("/webhook")
+async def stripe_webhook(request: Request, stripe_signature: str = Header(None), db: Session = Depends(get_db)):
+    """Listen for successful payments from Stripe"""
+    payload = await request.body()
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, stripe_signature, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        metadata = session.get('metadata', {})
+        
+        # Verify it's our deposit
+        if metadata.get('transaction_type') == 'deposit':
+            user_id = int(metadata.get('user_id'))
+            # Amount comes in cents, convert back to decimal
+            amount_paid = Decimal(session['amount_total']) / 100
+            
+            # Find User's Cash Wallet
+            wallet = wallet_service.get_wallet(db, user_id, WalletType.cash)
+            if wallet:
+                # Credit the wallet atomically
+                wallet_service.credit_wallet(db, wallet.wallet_id, amount_paid)
+                print(f"💰 Funded User {user_id} with ${amount_paid}")
+            else:
+                print(f"❌ Wallet not found for User {user_id}")
+
+    return {"status": "success"}
+
+# 3. Withdraw via Stripe
+@router.post("/withdraw/stripe")
+async def withdraw_funds(
+    withdraw_data: WalletWithdraw,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Withdraw funds from wallet via Stripe"""
+    
+    # 1. Get Wallet
+    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+    if not wallet or wallet.balance < withdraw_data.amount:
+        raise HTTPException(status_code=400, detail="Insufficient funds")
+
+    # 2. Debit Wallet FIRST (Internal ledger update)
+    try:
+        wallet_service.debit_wallet(db, wallet.wallet_id, withdraw_data.amount)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # 3. Trigger Stripe Payout
+    try:
+        # In a real app, you would retrieve the user's stripe_connect_id from the DB
+        # For now, we mock the ID or leave it None to trigger the mock logic in service
+        stripe_service.create_payout(withdraw_data.amount, destination_account_id=None)
+        
+        return {
+            "wallet_id": wallet.wallet_id,
+            "balance": wallet.balance, # Updated balance
+            "message": "Withdrawal processed successfully"
+        }
+    except Exception as e:
+        # CRITICAL: Rollback money if Stripe fails
+        wallet_service.credit_wallet(db, wallet.wallet_id, withdraw_data.amount)
+        raise HTTPException(status_code=500, detail=f"Payout failed: {str(e)}")

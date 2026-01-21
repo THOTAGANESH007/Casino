@@ -79,4 +79,17 @@ export const adminAPI = {
     });
     return response.data;
   },
+
+  getMarketplace: async () => {
+    const response = await api.get("admin/marketplace");
+    return response.data;
+  },
+
+  toggleGame: async (providerGameId, isActive) => {
+    const response = await api.post("admin/games/toggle", {
+      provider_game_id: providerGameId,
+      is_active: isActive,
+    });
+    return response.data;
+  },
 };

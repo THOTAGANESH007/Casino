@@ -11,8 +11,8 @@ from ..schemas.tenant import RegionUpdate, TenantCreate, TenantResponse, RegionC
 from ..schemas.user import TenantAdminCreate, UserResponse, UserSignup
 from ..utils.dependencies import require_casino_owner, require_tenant_admin
 from ..services.email_service import email_service
-from ..models.game import GameProvider
-from ..schemas.game import GameProviderCreate, GameProviderResponse
+from ..models.game import Game, GameProvider, ProviderGame, TenantGame
+from ..schemas.game import GameProviderCreate, GameProviderResponse, MarketplaceItemResponse, ProviderGameCreate, TenantGameToggle
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -460,3 +460,125 @@ async def update_tenant_admin_status(
     db.refresh(admin_user)
     
     return {"message": f"Admin status updated to {'Active' if is_active else 'Inactive'}"}
+
+
+
+@router.post("/catalog/add", status_code=status.HTTP_201_CREATED)
+async def add_game_to_provider(
+    item: ProviderGameCreate,
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_casino_owner)
+):
+    """Owner links a generic game to a provider with a specific cost"""
+    # Check if exists
+    exists = db.query(ProviderGame).filter(
+        ProviderGame.provider_id == item.provider_id,
+        ProviderGame.game_id == item.game_id
+    ).first()
+    
+    if exists:
+        raise HTTPException(status_code=400, detail="Game already linked to this provider")
+        
+    new_link = ProviderGame(
+        provider_id=item.provider_id,
+        game_id=item.game_id,
+        cost_per_play=item.cost_per_play
+    )
+    db.add(new_link)
+    db.commit()
+    return {"message": "Game added to provider catalog"}
+
+# Helper to ensure base games exist (Run once or via script)
+@router.post("/games/init")
+async def init_base_games(db: Session = Depends(get_db), owner: User = Depends(require_casino_owner)):
+    base_games = ["Blackjack", "Roulette", "Slots", "Mines", "Crash", "Dice", "Fantasy Cricket"]
+    created = []
+    for name in base_games:
+        if not db.query(Game).filter(Game.game_name == name).first():
+            db.add(Game(game_name=name, rtp_percent=98.0))
+            created.append(name)
+    db.commit()
+    return {"created": created}
+
+@router.get("/marketplace", response_model=List[MarketplaceItemResponse])
+async def get_game_marketplace(
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_tenant_admin)
+):
+    """Show all available games from all providers and if tenant owns them"""
+    
+    # 1. Get all provider games
+    catalog = db.query(ProviderGame).join(Game).join(GameProvider).all()
+    
+    # 2. Get what tenant currently has
+    my_games = db.query(TenantGame).filter(TenantGame.tenant_id == admin.tenant_id).all()
+    my_game_ids = {g.provider_game_id: g.is_active for g in my_games}
+    
+    result = []
+    for item in catalog:
+        result.append({
+            "id": item.id,
+            "game_name": item.game.game_name,
+            "provider_name": item.provider.provider_name,
+            "cost_per_play": float(item.cost_per_play),
+            "is_enabled": my_game_ids.get(item.id, False) # True if exists and active
+        })
+        
+    return result
+
+@router.post("/games/toggle")
+async def toggle_tenant_game(
+    data: TenantGameToggle,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_tenant_admin)
+):
+    """Enable or disable a game for this tenant"""
+    
+    # Check if record exists
+    tenant_game = db.query(TenantGame).filter(
+        TenantGame.tenant_id == admin.tenant_id,
+        TenantGame.provider_game_id == data.provider_game_id
+    ).first()
+    
+    if tenant_game:
+        tenant_game.is_active = data.is_active
+    else:
+        if data.is_active:
+            # Create new subscription
+            tenant_game = TenantGame(
+                tenant_id=admin.tenant_id,
+                provider_game_id=data.provider_game_id,
+                is_active=True
+            )
+            db.add(tenant_game)
+    
+    db.commit()
+    return {"message": "Game updated successfully"}
+
+
+@router.get("/games", status_code=status.HTTP_200_OK)
+async def get_base_games(
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_casino_owner)
+):
+    """List all generic games (Blackjack, Slots, etc.)"""
+    return db.query(Game).all()
+
+@router.get("/catalog", status_code=status.HTTP_200_OK)
+async def get_catalog(
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_casino_owner)
+):
+    """List all configured Provider Games (The Catalog)"""
+    catalog = db.query(ProviderGame).join(Game).join(GameProvider).all()
+    
+    result = []
+    for item in catalog:
+        result.append({
+            "id": item.id,
+            "provider_name": item.provider.provider_name,
+            "game_name": item.game.game_name,
+            "cost_per_play": item.cost_per_play,
+            "is_active": item.provider.is_active # inherited from provider
+        })
+    return result

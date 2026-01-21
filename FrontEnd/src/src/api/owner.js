@@ -95,4 +95,37 @@ export const ownerAPI = {
     );
     return response.data;
   },
+
+  // Games Management
+  // 1. Get Base Games
+  getBaseGames: async () => {
+    const response = await axios.get(`${API_URL}/games`, getHeaders());
+    return response.data;
+  },
+
+  // 2. Initialize Base Games (Seed DB)
+  initBaseGames: async () => {
+    const response = await axios.post(
+      `${API_URL}/games/init`,
+      {},
+      getHeaders(),
+    );
+    return response.data;
+  },
+
+  // 3. Get Current Catalog
+  getCatalog: async () => {
+    const response = await axios.get(`${API_URL}/catalog`, getHeaders());
+    return response.data;
+  },
+
+  // 4. Add Link (Provider + Game + Cost)
+  addToCatalog: async (data) => {
+    const response = await axios.post(
+      `${API_URL}/catalog/add`,
+      data,
+      getHeaders(),
+    );
+    return response.data;
+  },
 };

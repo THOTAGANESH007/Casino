@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000,https://casino-online-gaming.vercel.app"
     
     # Application
     ENVIRONMENT: str = "development"

@@ -11,7 +11,7 @@ class StripeService:
         
         # Stripe expects amount in cents (integers)
         amount_cents = int(amount * 100)
-        
+        print(settings.FRONTEND_URL)
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -32,7 +32,10 @@ class StripeService:
                 "user_id": str(user_id),
                 "transaction_type": "deposit"
             }
+
         )
+        print("SUCCESS URL:", f"{settings.FRONTEND_URL}/wallet?status=success")
+        print("CANCEL URL:", f"{settings.FRONTEND_URL}/wallet?status=cancel")
         return session.url
 
     @staticmethod

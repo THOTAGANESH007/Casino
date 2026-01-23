@@ -127,6 +127,9 @@ const WalletOverview = () => {
             </p>
           </div>
           <p className="text-yellow-100 text-sm">Loyalty points</p>
+          <p className="text-yellow-200 text-xs mt-1">
+            Earn 10% of every bet as points!
+          </p>
         </div>
       </div>
 

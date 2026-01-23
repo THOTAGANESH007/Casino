@@ -54,15 +54,9 @@ async def spin_roulette(
     
     # Calculate total bet amount
     total_bet_amount = sum(bet.bet_amount for bet in spin_data.bets)
-    
-    # Debit total bet amount
-    try:
-        wallet_service.debit_wallet(db, wallet.wallet_id, total_bet_amount)
-    except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance"
-        )
+
+    # Debit using hybrid logic
+    txn_details = wallet_service.process_game_bet(db, current_user.user_id, total_bet_amount)
     
     # Create game session
     session = GameSession(
@@ -97,7 +91,7 @@ async def spin_roulette(
     for bet_data, bet_result in zip(spin_data.bets, result["bet_results"]):
         bet_record = Bet(
             round_id=round_obj.round_id,
-            wallet_id=wallet.wallet_id,
+            wallet_id=txn_details["primary_wallet_id"],
             bet_amount=bet_data.bet_amount,
             payout_amount=bet_result["payout"],
             bet_status=BetStatus.won if bet_result["won"] else BetStatus.lost

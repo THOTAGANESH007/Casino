@@ -47,15 +47,16 @@ async def start_blackjack_game(
         db.refresh(game)
     
     # Get user's cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wallet not found"
-        )
+    # wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+    # if not wallet:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_404_NOT_FOUND,
+    #         detail="Wallet not found"
+    #     )
     
-    # Debit bet amount
-    wallet_service.debit_wallet(db, wallet.wallet_id, bet_amount)
+    # # Debit bet amount
+    # wallet_service.debit_wallet(db, wallet.wallet_id, bet_amount)
+    txn_details = wallet_service.process_game_bet(db, current_user.user_id, bet_amount)
     
     # Create game session
     session = GameSession(
@@ -75,7 +76,8 @@ async def start_blackjack_game(
     # Create bet record
     bet = Bet(
         round_id=round_obj.round_id,
-        wallet_id=wallet.wallet_id,
+        # wallet_id=wallet.wallet_id,
+        wallet_id=txn_details["primary_wallet_id"],
         bet_amount=bet_amount,
         payout_amount=Decimal("0"),
         bet_status=BetStatus.placed

@@ -1,131 +1,92 @@
-import axios from "axios";
-import { storage } from "../utils/storage";
-
-const API_URL = "http://localhost:8000/admin";
-
-const getHeaders = () => {
-  const token = storage.getToken();
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  };
-};
+import api from "./axios";
 
 export const ownerAPI = {
   // Tenants
   getTenants: async () => {
-    const response = await axios.get(`${API_URL}/tenants`, getHeaders());
+    const response = await api.get("/admin/tenants");
     return response.data;
   },
+
   createTenant: async (data) => {
-    const response = await axios.post(`${API_URL}/tenants`, data, getHeaders());
+    const response = await api.post("/admin/tenants", data);
     return response.data;
   },
 
   // Regions
   getRegions: async () => {
-    const response = await axios.get(`${API_URL}/regions`, getHeaders());
+    const response = await api.get("/admin/regions");
     return response.data;
   },
 
   createRegion: async (data) => {
-    const response = await axios.post(`${API_URL}/regions`, data, getHeaders());
+    const response = await api.post("/admin/regions", data);
     return response.data;
   },
 
   updateRegionTax: async (regionId, taxRate) => {
-    const response = await axios.patch(
-      `${API_URL}/regions/${regionId}/tax`,
-      { tax_rate: taxRate },
-      getHeaders(),
-    );
+    // Fixed: Use backticks `` for template literals
+    const response = await api.patch(`/admin/regions/${regionId}/tax`, {
+      tax_rate: taxRate,
+    });
     return response.data;
   },
 
   // Game Providers
   getProviders: async () => {
-    const response = await axios.get(`${API_URL}/providers`, getHeaders());
+    const response = await api.get("/admin/providers");
     return response.data;
   },
+
   addProvider: async (data) => {
-    const response = await axios.post(
-      `${API_URL}/providers`,
-      data,
-      getHeaders(),
-    );
+    const response = await api.post("/admin/providers", data);
     return response.data;
   },
+
   updateProviderStatus: async (providerId, isActive) => {
-    const response = await axios.patch(
-      `${API_URL}/providers/${providerId}/status`,
-      null,
-      {
-        ...getHeaders(),
-        params: { is_active: isActive },
-      },
-    );
+    // Fixed: Use backticks and clean params handling
+    const response = await api.patch(`/admin/providers/${providerId}/status`, null, {
+      params: { is_active: isActive },
+    });
     return response.data;
   },
 
   // Create Admin
   createTenantAdmin: async (data) => {
-    const response = await axios.post(
-      `${API_URL}/create_admin_user_for_tenant`,
-      data,
-      getHeaders(),
-    );
+    const response = await api.post("/admin/create_admin_user_for_tenant", data);
     return response.data;
   },
 
   getTenantAdmins: async () => {
-    const response = await axios.get(`${API_URL}/tenant-admins`, getHeaders());
+    const response = await api.get("/admin/tenant-admins");
     return response.data;
   },
 
   updateTenantAdminStatus: async (userId, isActive) => {
-    const response = await axios.patch(
-      `${API_URL}/tenant-admins/${userId}/status`,
-      null,
-      {
-        ...getHeaders(),
-        params: { is_active: isActive },
-      },
-    );
+    // Fixed: Use backticks
+    const response = await api.patch(`/admin/tenant-admins/${userId}/status`, null, {
+      params: { is_active: isActive },
+    });
     return response.data;
   },
 
   // Games Management
-  // 1. Get Base Games
   getBaseGames: async () => {
-    const response = await axios.get(`${API_URL}/games`, getHeaders());
+    const response = await api.get("/admin/games");
     return response.data;
   },
 
-  // 2. Initialize Base Games (Seed DB)
   initBaseGames: async () => {
-    const response = await axios.post(
-      `${API_URL}/games/init`,
-      {},
-      getHeaders(),
-    );
+    const response = await api.post("/admin/games/init", {});
     return response.data;
   },
 
-  // 3. Get Current Catalog
   getCatalog: async () => {
-    const response = await axios.get(`${API_URL}/catalog`, getHeaders());
+    const response = await api.get("/admin/catalog");
     return response.data;
   },
 
-  // 4. Add Link (Provider + Game + Cost)
   addToCatalog: async (data) => {
-    const response = await axios.post(
-      `${API_URL}/catalog/add`,
-      data,
-      getHeaders(),
-    );
+    const response = await api.post("/admin/catalog/add", data);
     return response.data;
   },
 };

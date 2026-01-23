@@ -28,6 +28,7 @@ import Crash from "./src/components/games/Crash";
 import Mines from "./src/components/games/Mines";
 import ForgotPassword from "./src/components/auth/ForgotPassword.jsx";
 import UserProfile from "./src/components/user/UserProfile.jsx";
+import ResponsibleGaming from "./src/components/user/ResponsibleGaming.jsx";
 
 const App = () => {
   return (
@@ -173,6 +174,16 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+
+              <Route
+                path="/responsible-gaming"
+                element={
+                  <ProtectedRoute>
+                    <ResponsibleGaming />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* 404 - Redirect to games */}
               <Route path="*" element={<Navigate to="/games" replace />} />
             </Routes>

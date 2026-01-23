@@ -4,7 +4,7 @@ from .config import settings
 from .database import engine, Base
 
 # Import routers
-from .routers import auth, admin, wallet, user, lobby
+from .routers import auth, admin, wallet, user, lobby, responsible_gaming
 from .routers.games import (
     blackjack,
     roulette,
@@ -51,6 +51,7 @@ app.include_router(crash.router)
 app.include_router(fantasy_cricket.router)
 app.include_router(user.router)
 app.include_router(lobby.router)
+app.include_router(responsible_gaming.router)
 
 @app.get("/")
 async def root():

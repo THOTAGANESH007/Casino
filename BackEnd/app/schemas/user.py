@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from ..models.user import UserType, DocType
@@ -79,3 +79,21 @@ class ResetPasswordRequest(BaseModel):
     email: str
     otp: str
     new_password: str
+
+class LimitSet(BaseModel):
+    daily_loss_limit: Optional[Decimal] = Field(None, ge=0)
+    daily_bet_limit: Optional[Decimal] = Field(None, ge=0)
+    monthly_bet_limit: Optional[Decimal] = Field(None, ge=0)
+
+class LimitResponse(BaseModel):
+    daily_loss_limit: Optional[Decimal]
+    daily_bet_limit: Optional[Decimal]
+    monthly_bet_limit: Optional[Decimal]
+    
+    # Current usage stats (Useful for UI)
+    current_daily_loss: Decimal = Decimal(0)
+    current_daily_bet: Decimal = Decimal(0)
+    current_monthly_bet: Decimal = Decimal(0)
+
+    class Config:
+        from_attributes = True

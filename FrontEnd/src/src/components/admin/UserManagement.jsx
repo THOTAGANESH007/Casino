@@ -6,6 +6,7 @@ import SuccessMessage from "../common/SuccessMessage";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import { formatDateTime } from "../../utils/helpers";
+import SetLimitsModal from "./SetLimitsModal";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -15,6 +16,7 @@ const UserManagement = () => {
   const [filters, setFilters] = useState({
     is_active: "",
   });
+  const [selectedUserForLimits, setSelectedUserForLimits] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -175,6 +177,14 @@ const UserManagement = () => {
                         Activate
                       </Button>
                     )}
+
+                    <Button
+                      onClick={() => setSelectedUserForLimits(user)}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      ⚖️ Limits
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -191,6 +201,13 @@ const UserManagement = () => {
             </tbody>
           </table>
         </div>
+        {/* RENDER MODAL */}
+        {selectedUserForLimits && (
+          <SetLimitsModal
+            user={selectedUserForLimits}
+            onClose={() => setSelectedUserForLimits(null)}
+          />
+        )}
       </div>
     </div>
   );

@@ -19,8 +19,13 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-3xl"><img src="/msd.webp" alt="MSD Logo"
-    className="w-12.5 h-12.5 rounded-full object-cover border-2 border-gray-200" /> </span>
+            <span className="text-3xl">
+              <img
+                src="/msd.webp"
+                alt="MSD Logo"
+                className="w-12.5 h-12.5 rounded-full object-cover border-2 border-gray-200"
+              />{" "}
+            </span>
             <span className="text-xl font-bold">Casino Platform</span>
           </Link>
 
@@ -59,6 +64,12 @@ const Navbar = () => {
                   className="px-4 py-2 bg-pink-500 rounded-lg"
                 >
                   Profile
+                </Link>
+                <Link
+                  to="/responsible-gaming"
+                  className="px-4 py-2 bg-pink-500 rounded-lg"
+                >
+                  Your Limits
                 </Link>
                 <div className="flex items-center space-x-2 px-4 py-2 bg-pink-300 rounded-lg">
                   <span className="text-2xl">👤</span>

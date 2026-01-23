@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, Enum
+from sqlalchemy import Column, Integer, Numeric, String, Boolean, TIMESTAMP, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -35,6 +35,7 @@ class User(Base):
     kyc = relationship("UserKYC", back_populates="user", uselist=False)
     wallets = relationship("Wallet", back_populates="user")
     game_sessions = relationship("GameSession", back_populates="user")
+    limits = relationship("ResponsibleLimit", back_populates="user", uselist=False)
 
 
 class UserKYC(Base):
@@ -49,3 +50,15 @@ class UserKYC(Base):
     
     # Relationships
     user = relationship("User", back_populates="kyc")
+    
+class ResponsibleLimit(Base):
+    __tablename__ = "responsible_limits"
+    
+    limit_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), unique=True, index=True)
+    daily_loss_limit = Column(Numeric(18, 2), nullable=True)
+    daily_bet_limit = Column(Numeric(18, 2), nullable=True) 
+    monthly_bet_limit = Column(Numeric(18, 2), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="limits")

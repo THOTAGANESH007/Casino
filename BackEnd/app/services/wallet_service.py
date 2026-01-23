@@ -1,11 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 from decimal import Decimal
 from typing import Optional
 from fastapi import HTTPException, status
-from app.models.wallet import Wallet, WalletType
-from app.models.user import User
-
+from ..models.wallet import Wallet, WalletType
+from .limit_service import limit_service
 class WalletService:
     """Server-authoritative wallet service with atomic transactions"""
     
@@ -105,6 +103,9 @@ class WalletService:
                 detail="Wallet not found"
             )
         
+        if wallet.type_of_wallet == WalletType.cash:
+            limit_service.check_bet_limits(db, wallet.user_id, amount)
+
         if wallet.balance < amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

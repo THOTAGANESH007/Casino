@@ -274,7 +274,7 @@ const FantasyCricket = () => {
                   onClick={() => selectMatch(match)}
                   variant="primary"
                   className="w-full"
-                  disabled={match.status !== "upcoming"}
+                  disabled={!["upcoming", "live"].includes(match.status)}
                 >
                   {match.status === "upcoming" ? "Create Team" : "View Match"}
                 </Button>

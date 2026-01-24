@@ -206,3 +206,56 @@ user_id INT REFERENCES users(user_id),
 win_amount NUMERIC(18,2),
 won_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE responsible_limits(
+limit_id SERIAL PRIMARY KEY,
+user_id INT REFERENCES users(user_id),
+daily_loss_limit NUMERIC(18,2),
+daily_bet_limit NUMERIC(18,2),
+monthly_bet_limit NUMERIC(18,2)
+);
+
+CREATE TYPE match_status AS ENUM('upcoming', 'live', 'completed', 'cancelled');
+CREATE TYPE player_role AS ENUM('batsman', 'bowler', 'all_rounder', 'wicket_keeper');
+
+CREATE TABLE fantasy_matches(
+id SERIAL PRIMARY KEY,
+match_code VARCHAR(50) UNIQUE NOT NULL,
+team1 VARCHAR(50) NOT NULL,
+team2 VARCHAR(50) NOT NULL,
+status match_status DEFAULT 'upcoming',
+entry_fee NUMERIC(18, 2) NOT NULL,
+max_budget NUMERIC(18, 2) DEFAULT 100.00,
+prize_pool NUMERIC(18, 2) DEFAULT 0.00,
+created_at TIMESTAMPTZ DEFAULT NOW(),
+start_time TIMESTAMPTZ,
+end_time TIMESTAMPTZ
+);
+
+CREATE TABLE fantasy_players(
+id SERIAL PRIMARY KEY,
+match_id INTEGER NOT NULL REFERENCES fantasy_matches(id) ON DELETE CASCADE,
+name VARCHAR(100) NOT NULL,
+role player_role NOT NULL,
+team_name VARCHAR(50) NOT NULL,
+credit_value NUMERIC(5, 2) NOT NULL,
+stats JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE fantasy_user_teams(
+id SERIAL PRIMARY KEY,
+user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+match_id INTEGER NOT NULL REFERENCES fantasy_matches(id) ON DELETE CASCADE,
+captain_id INTEGER REFERENCES fantasy_players(id),
+vice_captain_id INTEGER REFERENCES fantasy_players(id),
+total_points NUMERIC(10, 2) DEFAULT 0.00,
+rank INTEGER,
+prize_won NUMERIC(18, 2) DEFAULT 0.00
+);
+
+CREATE TABLE fantasy_team_players_link(
+user_team_id INTEGER NOT NULL REFERENCES fantasy_user_teams(id) ON DELETE CASCADE,
+player_id INTEGER NOT NULL REFERENCES fantasy_players(id) ON DELETE CASCADE,
+PRIMARY KEY (user_team_id, player_id)
+);

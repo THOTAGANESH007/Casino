@@ -147,7 +147,7 @@ export const fantasyCricketAPI = {
 
   getMatchPlayers: async (matchId) => {
     const response = await api.get(
-      `/games/fantasy-cricket/matches/${matchId}/players`
+      `/games/fantasy-cricket/matches/${matchId}/players`,
     );
     return response.data;
   },
@@ -160,14 +160,52 @@ export const fantasyCricketAPI = {
         player_ids: playerIds,
         captain_id: captainId,
         vice_captain_id: viceCaptainId,
-      }
+      },
     );
     return response.data;
   },
 
   getLeaderboard: async (matchId) => {
     const response = await api.get(
-      `/games/fantasy-cricket/matches/${matchId}/leaderboard`
+      `/games/fantasy-cricket/matches/${matchId}/leaderboard`,
+    );
+    return response.data;
+  },
+};
+
+export const fantasyAdminAPI = {
+  createMatch: async (data) => {
+    const response = await api.post(
+      "/games/fantasy-cricket/admin/matches",
+      data,
+    );
+    return response.data;
+  },
+  addPlayerToMatch: async (matchId, playerData) => {
+    const response = await api.post(
+      `/games/fantasy-cricket/admin/matches/${matchId}/players`,
+      playerData,
+    );
+    return response.data;
+  },
+  startMatch: async (matchId) => {
+    const response = await api.post(
+      `/games/fantasy-cricket/admin/matches/${matchId}/start`,
+      {},
+    );
+    return response.data;
+  },
+  updatePlayerStats: async (matchId, statsData) => {
+    const response = await api.post(
+      `/games/fantasy-cricket/admin/matches/${matchId}/update-stats`,
+      statsData,
+    );
+    return response.data;
+  },
+  settleMatch: async (matchId) => {
+    const response = await api.post(
+      `/games/fantasy-cricket/admin/matches/${matchId}/settle`,
+      {},
     );
     return response.data;
   },

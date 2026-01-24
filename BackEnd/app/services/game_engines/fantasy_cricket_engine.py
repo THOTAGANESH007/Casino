@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class PlayerRole(str, Enum):
@@ -174,7 +174,7 @@ class FantasyCricketEngine:
     def start_match(self):
         """Start the match (no more teams can join)"""
         self.status = MatchStatus.LIVE
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
     
     def calculate_player_points(self, player: FantasyPlayer) -> Decimal:
         """Calculate points for a player based on performance"""
@@ -210,7 +210,7 @@ class FantasyCricketEngine:
             raise Exception("Match must be live to settle")
         
         self.status = MatchStatus.COMPLETED
-        self.end_time = datetime.utcnow()
+        self.end_time = datetime.now(timezone.utc)
         
         # Calculate points for each team
         for team in self.teams.values():

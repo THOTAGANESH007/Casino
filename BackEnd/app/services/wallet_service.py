@@ -215,9 +215,9 @@ class WalletService:
         
         remaining_promo_allowance = max_promo_allowance - deducted_bonus
         
-        if points_wallet and points_wallet.balance > 0 and remaining_promo_allowance > 0:
-            # Assuming 1 Point = $1 for betting purposes
-            deducted_points = min(points_wallet.balance, remaining_promo_allowance)
+        if points_wallet and points_wallet.balance > 10 and remaining_promo_allowance > 0:
+            # 10 Point = $1 for betting purposes
+            deducted_points = min(points_wallet.balance//10, remaining_promo_allowance)
 
         # The rest must come from Cash
         required_cash = total_bet - (deducted_bonus + deducted_points)
@@ -234,10 +234,10 @@ class WalletService:
         if bonus_wallet:
             bonus_wallet.balance -= deducted_bonus
         if points_wallet:
-            points_wallet.balance -= deducted_points
+            points_wallet.balance -= deducted_points*10  # Convert back to points
 
         # 5. Award New Points (Loyalty Program)
-        # Rule: Earn 1 Point for every $10 bet (10% ratio) or 1% ratio. Let's do 10%.
+        # Rule: Earn 1 Point for every $10 bet (10% ratio).
         points_earned = total_bet * Decimal("0.10")
         if points_wallet:
             points_wallet.balance += points_earned
@@ -250,7 +250,7 @@ class WalletService:
             "primary_wallet_id": cash_wallet.wallet_id,
             "deducted_cash": required_cash,
             "deducted_bonus": deducted_bonus,
-            "deducted_points": deducted_points,
+            "deducted_points": deducted_points*10,
             "points_earned": points_earned
         }
 

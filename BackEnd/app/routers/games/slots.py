@@ -1,3 +1,4 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -30,23 +31,12 @@ async def spin_slots(
         db.add(game)
         db.commit()
         db.refresh(game)
-    
-    # Get user's cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wallet not found"
-        )
-    
-    # Debit bet amount
-    try:
-        wallet_service.debit_wallet(db, wallet.wallet_id, spin_data.bet_amount)
-    except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance"
-        )
+    # Process the bet using hybrid wallet system (Cash + Bonus + Points)
+    txn_details = wallet_service.process_game_bet(
+        db, 
+        current_user.user_id, 
+        spin_data.bet_amount
+    )
     
     # Create game session
     session = GameSession(
@@ -70,7 +60,7 @@ async def spin_slots(
     # Create bet record
     bet_record = Bet(
         round_id=round_obj.round_id,
-        wallet_id=wallet.wallet_id,
+        wallet_id=txn_details["primary_wallet_id"],
         bet_amount=spin_data.bet_amount,
         payout_amount=result["payout"],
         bet_status=BetStatus.won if result["payout"] > 0 else BetStatus.lost
@@ -80,11 +70,11 @@ async def spin_slots(
     
     # Credit payout if won
     if result["payout"] > 0:
-        wallet_service.credit_wallet(db, wallet.wallet_id, result["payout"])
+        wallet_service.credit_winnings(db, current_user.user_id, result["payout"])
     
     # Close session
     from datetime import datetime
-    session.ended_at = datetime.utcnow()
+    session.ended_at = datetime.now(timezone.utc)
     db.commit()
     
     return {

@@ -1,15 +1,15 @@
+from datetime import timezone, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
 from typing import Dict, Optional
 from pydantic import BaseModel
 import secrets
-import asyncio
 from ...database import get_db
 from ...models.user import User
 from ...models.game import Game, GameSession, GameRound, Bet, BetStatus
 from ...models.wallet import WalletType
-from ...utils.dependencies import get_current_active_user, require_tenant
+from ...utils.dependencies import require_tenant
 from ...services.wallet_service import wallet_service
 from ...services.game_engines.crash_engine import CrashGame
 
@@ -47,14 +47,6 @@ async def join_crash_game(
         db.commit()
         db.refresh(game)
     
-    # Get user's cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wallet not found"
-        )
-    
     # Create or get current game
     if not current_game_id or current_game_id not in active_crash_games:
         game_id = f"crash_{secrets.token_hex(8)}"
@@ -72,15 +64,12 @@ async def join_crash_game(
             detail="Game already started, wait for next round"
         )
     
-    # Debit bet amount
-    try:
-        wallet_service.debit_wallet(db, wallet.wallet_id, bet_data.bet_amount)
-    except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance"
+    # Process Entry Fee (Hybrid Betting: Cash + Bonus + Points)
+    txn_details = wallet_service.process_game_bet(
+            db, 
+            current_user.user_id, 
+            bet_data.bet_amount
         )
-    
     # Create game session
     session = GameSession(
         user_id=current_user.user_id,
@@ -99,7 +88,7 @@ async def join_crash_game(
     # Create bet record
     bet_record = Bet(
         round_id=round_obj.round_id,
-        wallet_id=wallet.wallet_id,
+        wallet_id=txn_details["primary_wallet_id"],
         bet_amount=bet_data.bet_amount,
         payout_amount=Decimal("0"),
         bet_status=BetStatus.placed
@@ -117,7 +106,7 @@ async def join_crash_game(
     
     if not success:
         # Refund
-        wallet_service.credit_wallet(db, wallet.wallet_id, bet_data.bet_amount)
+        wallet_service.credit_winnings(db, current_user.user_id, bet_data.bet_amount)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to join game"
@@ -189,11 +178,10 @@ async def cashout_crash(
         db.commit()
         
         # Credit payout
-        wallet_service.credit_wallet(db, bet.wallet_id, result["payout"])
+        wallet_service.credit_winnings(db, current_user.user_id, result["payout"])
         
         # Close session
-        from datetime import datetime
-        session.ended_at = datetime.utcnow()
+        session.ended_at = datetime.now(timezone.utc)
         db.commit()
     
     return {

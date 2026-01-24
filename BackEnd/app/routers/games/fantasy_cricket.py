@@ -1,3 +1,4 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -220,11 +221,11 @@ async def settle_match(
             
             # Credit prize to wallet
             if team.prize_amount > 0:
-                wallet_service.credit_wallet(db, bet.wallet_id, team.prize_amount)
-            
+                wallet_service.credit_winnings(db, team.user_id, team.prize_amount)
+                
             # Close session
             from datetime import datetime
-            session.ended_at = datetime.utcnow()
+            session.ended_at = datetime.now(timezone.utc)
             db.commit()
     
     return {
@@ -309,24 +310,12 @@ async def create_fantasy_team(
         db.add(game)
         db.commit()
         db.refresh(game)
-    
-    # Get user's cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wallet not found"
+    # Process Entry Fee (Hybrid Betting: Cash + Bonus + Points)
+    txn_details = wallet_service.process_game_bet(
+            db, 
+            current_user.user_id, 
+            engine.entry_fee
         )
-    
-    # Debit entry fee
-    try:
-        wallet_service.debit_wallet(db, wallet.wallet_id, engine.entry_fee)
-    except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance"
-        )
-    
     # Create game session
     session = GameSession(
         user_id=current_user.user_id,
@@ -345,7 +334,7 @@ async def create_fantasy_team(
     # Create bet record
     bet_record = Bet(
         round_id=round_obj.round_id,
-        wallet_id=wallet.wallet_id,
+        wallet_id=txn_details["primary_wallet_id"],
         bet_amount=engine.entry_fee,
         payout_amount=Decimal("0"),
         bet_status=BetStatus.placed
@@ -372,7 +361,7 @@ async def create_fantasy_team(
     # Validate team
     if not engine.validate_team(team):
         # Refund
-        wallet_service.credit_wallet(db, wallet.wallet_id, engine.entry_fee)
+        wallet_service.credit_winnings(db, current_user.user_id, engine.entry_fee)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid team composition"

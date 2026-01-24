@@ -1,3 +1,4 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -46,22 +47,12 @@ async def start_mines_game(
         db.commit()
         db.refresh(game)
     
-    # Get user's cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wallet not found"
-        )
-    
-    # Debit bet amount
-    try:
-        wallet_service.debit_wallet(db, wallet.wallet_id, game_data.bet_amount)
-    except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance"
-        )
+    # Process the bet using hybrid wallet system (Cash + Bonus + Points)
+    txn_details = wallet_service.process_game_bet(
+        db, 
+        current_user.user_id, 
+        game_data.bet_amount
+    )
     
     # Create game session
     session = GameSession(
@@ -81,7 +72,7 @@ async def start_mines_game(
     # Create bet record (payout updated on cashout)
     bet_record = Bet(
         round_id=round_obj.round_id,
-        wallet_id=wallet.wallet_id,
+        wallet_id=txn_details["primary_wallet_id"],
         bet_amount=game_data.bet_amount,
         payout_amount=Decimal("0"),
         bet_status=BetStatus.placed
@@ -250,14 +241,14 @@ async def _settle_mines_game(session_id: int, engine: MinesEngine, db: Session):
     
     # Credit payout to wallet
     if payout > 0:
-        wallet_service.credit_wallet(db, bet.wallet_id, payout)
+        wallet_service.credit_winnings(db, engine.user_id, payout)
     
     # Close session
     from datetime import datetime
     session = db.query(GameSession).filter(
         GameSession.session_id == session_id
     ).first()
-    session.ended_at = datetime.utcnow()
+    session.ended_at = datetime.now(timezone.utc)
     db.commit()
     
     # Remove from active games

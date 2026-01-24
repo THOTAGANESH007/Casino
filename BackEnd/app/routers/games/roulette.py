@@ -1,13 +1,14 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
-from typing import List, Dict, Any, Optional
+from typing import List, Any, Optional
 from pydantic import BaseModel
 from ...database import get_db
 from ...models.user import User
 from ...models.game import Game, GameSession, GameRound, Bet, BetStatus
 from ...models.wallet import WalletType
-from ...utils.dependencies import get_current_active_user, require_tenant
+from ...utils.dependencies import require_tenant
 from ...services.wallet_service import wallet_service
 from ...services.game_engines.roulette_engine import RouletteEngine
 
@@ -107,7 +108,7 @@ async def spin_roulette(
     
     # Close session
     from datetime import datetime
-    session.ended_at = datetime.utcnow()
+    session.ended_at = datetime.now(timezone.utc)
     db.commit()
     
     return {

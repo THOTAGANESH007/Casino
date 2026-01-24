@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from fastapi import HTTPException
 from ..models.user import ResponsibleLimit
@@ -22,7 +22,7 @@ class LimitService:
         if not limits:
             return # No limits set
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -86,7 +86,7 @@ class LimitService:
     @staticmethod
     def get_usage_stats(db: Session, user_id: int):
         """Helper to get current usage for UI"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 

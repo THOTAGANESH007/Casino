@@ -1,3 +1,4 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -274,7 +275,7 @@ async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine, db: S
     session = db.query(GameSession).filter(
         GameSession.session_id == session_id
     ).first()
-    session.ended_at = datetime.utcnow()
+    session.ended_at = datetime.now(timezone.utc)
     db.commit()
     
     # Remove from active games

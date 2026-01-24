@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../../api/auth';
-import ErrorMessage from '../common/ErrorMessage';
-import Input from '../common/Input';
-import Button from '../common/Button';
-import { DOCUMENT_TYPES } from '../../utils/constants';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { authAPI } from "../../api/auth";
+import ErrorMessage from "../common/ErrorMessage";
+import Input from "../common/Input";
+import Button from "../common/Button";
+import { DOCUMENT_TYPES } from "../../utils/constants";
 
 const KYCSubmit = () => {
   const [formData, setFormData] = useState({
-    document_type: 'aadhar',
-    document_number: '',
+    document_type: "aadhar",
+    document_number: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -21,21 +21,21 @@ const KYCSubmit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setSubmitting(true);
 
     try {
       await authAPI.submitKYC(formData);
-      navigate('/pending-verification');
+      navigate("/pending-verification");
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to submit KYC');
+      setError(err.response?.data?.detail || "Failed to submit KYC");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-purple-50 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-50 to-purple-50 py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">📄</div>
@@ -44,7 +44,7 @@ const KYCSubmit = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <ErrorMessage message={error} onClose={() => setError('')} />
+          <ErrorMessage message={error} onClose={() => setError("")} />
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -69,7 +69,11 @@ const KYCSubmit = () => {
             value={formData.document_number}
             onChange={handleChange}
             required
-            placeholder={formData.document_type === 'aadhar' ? '1234-5678-9012' : 'ABCDE1234F'}
+            placeholder={
+              formData.document_type === "aadhar"
+                ? "1234-5678-9012"
+                : "ABCDE1234F"
+            }
           />
 
           <Button
@@ -79,13 +83,14 @@ const KYCSubmit = () => {
             disabled={submitting}
             className="w-full"
           >
-            {submitting ? 'Submitting...' : 'Submit KYC'}
+            {submitting ? "Submitting..." : "Submit KYC"}
           </Button>
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Your documents will be reviewed within 24-48 hours.
+            <strong>Note:</strong> Your documents will be reviewed within 24-48
+            hours.
           </p>
         </div>
       </div>

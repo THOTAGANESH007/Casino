@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
-import { useWallet } from '../../hooks/useWallet';
-import Modal from '../common/Modal';
-import ErrorMessage from '../common/ErrorMessage';
-import SuccessMessage from '../common/SuccessMessage';
-import Input from '../common/Input';
-import Button from '../common/Button';
-import { formatCurrency } from '../../utils/helpers';
+import React, { useState } from "react";
+import { useWallet } from "../../hooks/useWallet";
+import Modal from "../common/Modal";
+import ErrorMessage from "../common/ErrorMessage";
+import SuccessMessage from "../common/SuccessMessage";
+import Input from "../common/Input";
+import Button from "../common/Button";
+import { formatCurrency } from "../../utils/helpers";
 
 const WithdrawModal = ({ onClose, maxAmount }) => {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const { withdraw } = useWallet();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     const withdrawAmount = parseFloat(amount);
 
     if (withdrawAmount <= 0) {
-      setError('Amount must be greater than 0');
+      setError("Amount must be greater than 0");
       return;
     }
 
@@ -48,8 +48,8 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
   return (
     <Modal isOpen={true} onClose={onClose} title="Withdraw Funds">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <ErrorMessage message={error} onClose={() => setError('')} />
-        <SuccessMessage message={success} onClose={() => setSuccess('')} />
+        <ErrorMessage message={error} onClose={() => setError("")} />
+        <SuccessMessage message={success} onClose={() => setSuccess("")} />
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm font-semibold text-green-800">
@@ -71,7 +71,7 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
         <button
           type="button"
           onClick={() => setAmount(maxAmount.toString())}
-          className="text-sm text-primary-600 hover:text-primary-700 font-semibold"
+          className="text-sm text-red-400 hover:text-red-700 font-semibold cursor-pointer"
         >
           Withdraw All
         </button>
@@ -91,7 +91,7 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
             disabled={loading}
             className="flex-1"
           >
-            {loading ? 'Processing...' : 'Withdraw'}
+            {loading ? "Processing..." : "Withdraw"}
           </Button>
         </div>
 

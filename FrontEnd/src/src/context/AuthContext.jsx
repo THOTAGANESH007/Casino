@@ -9,17 +9,43 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
+  // 1. Central Function to Check Storage and Update State
+  const checkAuthStatus = useCallback(() => {
     const token = storage.getToken();
     const savedUser = storage.getUser();
 
     if (token && savedUser) {
       setUser(savedUser);
       setIsAuthenticated(true);
+    } else {
+      setUser(null);
+      setIsAuthenticated(false);
     }
-
     setLoading(false);
   }, []);
+
+  // 2. Initial Check
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  // 3. EVENT LISTENER: It listens for the event we created in Step 1
+  useEffect(() => {
+    const handleAuthChange = () => {
+      checkAuthStatus();
+    };
+
+    // Listen for custom event (same tab)
+    window.addEventListener("auth:change", handleAuthChange);
+
+    // Listen for storage event (other tabs logging out)
+    window.addEventListener("storage", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("auth:change", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
+  }, [checkAuthStatus]);
 
   const login = useCallback(async (email, password) => {
     try {

@@ -140,20 +140,21 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account disabled. Please Contact Admin!!!"
-        )
+    
+    # Check if account is disabled by tenant admin
+    # if not user.is_active:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Account disabled. Please Contact Admin!!!"
+    #     )
     
     # Check KYC Status (Strict check for login only)
-    if user.role == UserType.player:
-        if not user.kyc or not user.kyc.verified_status:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="KYC verification is pending or missing. You cannot login until verified."
-            )
+    # if user.role == UserType.player:
+    #     if not user.kyc or not user.kyc.verified_status:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_403_FORBIDDEN,
+    #             detail="KYC verification is pending or missing. You cannot login until verified."
+    #         )
     
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -164,10 +165,18 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
-    return current_user
+    user_dict = UserResponse.model_validate(current_user).model_dump()
+    # Include KYC verified status
+    if current_user.kyc:
+        user_dict['is_kyc_verified'] = current_user.kyc.verified_status # To restrict login based on KYC status
+        user_dict['kyc_id'] = current_user.kyc.kyc_id # He not even uploaded KYC documents
+    else:
+        user_dict['is_kyc_verified'] = False
+        user_dict['kyc_id'] = None
+    return user_dict
 
 @router.post("/forgot-password")
 async def forgot_password(

@@ -67,7 +67,7 @@ const DepositModal = ({ onClose }) => {
                 key={amt}
                 type="button"
                 onClick={() => setAmount(amt.toString())}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold cursor-pointer"
               >
                 ${amt}
               </button>

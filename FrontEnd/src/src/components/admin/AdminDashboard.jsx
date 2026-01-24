@@ -4,10 +4,9 @@ import UserManagement from "./UserManagement";
 import GameMarketplace from "./GameMarketplace";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("kyc");
+  const [activeTab, setActiveTab] = useState("users");
 
   const tabs = [
-    { id: "kyc", label: "KYC Approval", icon: "📄", component: KYCApproval },
     { id: "users", label: "My Players", icon: "👥", component: UserManagement },
     {
       id: "marketplace",
@@ -15,6 +14,7 @@ const AdminDashboard = () => {
       icon: "🏪",
       component: GameMarketplace,
     },
+    { id: "kyc", label: "KYC Approval", icon: "📄", component: KYCApproval },
   ];
 
   const ActiveComponent = tabs.find((t) => t.id === activeTab)?.component;

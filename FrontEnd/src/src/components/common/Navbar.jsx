@@ -4,7 +4,7 @@ import { useWallet } from "../../hooks/useWallet";
 import { formatCurrency } from "../../utils/helpers";
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isCasinoOwner } = useAuth();
   const { getCashBalance } = useWallet();
   const navigate = useNavigate();
 
@@ -26,7 +26,6 @@ const Navbar = () => {
                 className="w-12.5 h-12.5 rounded-full object-cover border-2 border-gray-200"
               />{" "}
             </span>
-            <span className="text-xl font-bold">Casino Platform</span>
           </Link>
 
           {/* Navigation */}
@@ -35,10 +34,17 @@ const Navbar = () => {
               <>
                 {isAdmin ? (
                   <Link
-                    to="/admin"
-                    className="px-4 py-2 rounded-lg hover:bg-pink-300 text-amber-600 transition-colors"
+                    to="/admin-profile"
+                    className="px-4 py-2 bg-pink-500 rounded-lg"
                   >
-                    Admin Dashboard
+                    Profile
+                  </Link>
+                ) : isCasinoOwner ? (
+                  <Link
+                    to="/owner-profile"
+                    className="px-4 py-2 bg-pink-500 rounded-lg"
+                  >
+                    Profile
                   </Link>
                 ) : (
                   <>
@@ -57,20 +63,21 @@ const Navbar = () => {
                     <div className="bg-green-600 px-4 py-2 rounded-lg font-semibold">
                       💰 {formatCurrency(getCashBalance())}
                     </div>
+                    <Link
+                      to="/profile"
+                      className="px-4 py-2 bg-pink-500 rounded-lg"
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      to="/responsible-gaming"
+                      className="px-4 py-2 bg-pink-500 rounded-lg"
+                    >
+                      Your Limits
+                    </Link>
                   </>
                 )}
-                <Link
-                  to="/profile"
-                  className="px-4 py-2 bg-pink-500 rounded-lg"
-                >
-                  Profile
-                </Link>
-                <Link
-                  to="/responsible-gaming"
-                  className="px-4 py-2 bg-pink-500 rounded-lg"
-                >
-                  Your Limits
-                </Link>
+
                 <div className="flex items-center space-x-2 px-4 py-2 bg-pink-300 rounded-lg">
                   <span className="text-2xl">👤</span>
                   <span>{user?.first_name}</span>
@@ -87,7 +94,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
+                  className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Login
                 </Link>

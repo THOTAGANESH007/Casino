@@ -29,6 +29,28 @@ import Mines from "./src/components/games/Mines";
 import ForgotPassword from "./src/components/auth/ForgotPassword.jsx";
 import UserProfile from "./src/components/user/UserProfile.jsx";
 import ResponsibleGaming from "./src/components/user/ResponsibleGaming.jsx";
+import { useAuth } from "./src/hooks/useAuth.js";
+import AdminProfile from "./src/components/user/AdminProfile.jsx";
+import OwnerProfile from "./src/components/user/OwnerProfile.jsx";
+
+const RoleBasedRedirect = () => {
+  const { isAuthenticated, isAdmin, isCasinoOwner } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (isCasinoOwner) {
+    return <Navigate to="/owner-dashboard" replace />;
+  }
+
+  // Default for regular users
+  return <Navigate to="/games" replace />;
+};
 
 const App = () => {
   return (
@@ -39,7 +61,7 @@ const App = () => {
           <main>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<Navigate to="/games" replace />} />
+              <Route path="/" element={<RoleBasedRedirect />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -66,15 +88,6 @@ const App = () => {
                 element={<PendingVerification />}
               />
 
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                }
-              />
-
               {/* Admin Routes */}
               <Route
                 path="/admin"
@@ -85,12 +98,48 @@ const App = () => {
                 }
               />
 
+              <Route
+                path="/admin-profile"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminProfile />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Casino Owner Route */}
               <Route
                 path="/owner-dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute ownerOnly>
                     <OwnerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/owner-profile"
+                element={
+                  <ProtectedRoute ownerOnly>
+                    <OwnerProfile />
+                  </ProtectedRoute>
+                }
+              />
+              {/* User Routes */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/responsible-gaming"
+                element={
+                  <ProtectedRoute>
+                    <ResponsibleGaming />
                   </ProtectedRoute>
                 }
               />
@@ -171,15 +220,6 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Mines />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/responsible-gaming"
-                element={
-                  <ProtectedRoute>
-                    <ResponsibleGaming />
                   </ProtectedRoute>
                 }
               />

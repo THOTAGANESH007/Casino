@@ -1,6 +1,10 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
+import { storage } from "../../utils/storage";
+
+const dumpAll = () => {
+  storage.clearAll();
+};
 
 const PendingVerification = () => {
   return (
@@ -27,7 +31,12 @@ const PendingVerification = () => {
         </div>
 
         <Link to="/login">
-          <Button variant="secondary" size="lg" className="w-full">
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            onClick={dumpAll}
+          >
             Back to Login
           </Button>
         </Link>

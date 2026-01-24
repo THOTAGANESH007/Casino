@@ -90,7 +90,6 @@ const Blackjack = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
       <div className="bg-linear-to-r from-red-500 to-pink-600 rounded-xl shadow-lg p-6 text-white mb-8">
         <div className="flex justify-between items-center">
           <div>

@@ -1,6 +1,8 @@
 export const storage = {
   setToken: (token) => {
     localStorage.setItem("token", token);
+    // Dispatch event to notify app of login
+    window.dispatchEvent(new Event("auth:change"));
   },
 
   getToken: () => {
@@ -26,5 +28,7 @@ export const storage = {
 
   clearAll: () => {
     localStorage.clear();
+    // Dispatch event to notify app of logout/clear
+    window.dispatchEvent(new Event("auth:change"));
   },
 };

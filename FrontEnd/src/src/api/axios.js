@@ -29,7 +29,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       storage.clearAll();
-      // window.location.href = "/login";
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   },

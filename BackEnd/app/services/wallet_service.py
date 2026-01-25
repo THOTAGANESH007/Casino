@@ -192,6 +192,9 @@ class WalletService:
         """
         if total_bet <= 0:
             raise HTTPException(status_code=400, detail="Bet amount must be positive")
+        
+        # This will block the user, if limits are exceeded
+        limit_service.check_bet_limits(db, user_id, total_bet)
 
         # 1. Fetch all wallets
         wallets = db.query(Wallet).filter(Wallet.user_id == user_id).all()

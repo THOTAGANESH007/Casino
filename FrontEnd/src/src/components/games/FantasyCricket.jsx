@@ -6,7 +6,8 @@ import SuccessMessage from "../common/SuccessMessage";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import { formatCurrency } from "../../utils/helpers";
-
+import { storage } from "../../utils/storage";
+import { LiveTeamView } from "./LiveTeamView";
 const FantasyCricket = () => {
   const [matches, setMatches] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -20,6 +21,8 @@ const FantasyCricket = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const { getCashBalance, fetchWallets } = useWallet();
+  const [myTeam, setMyTeam] = useState(null);
+  const user = storage.getUser();
 
   useEffect(() => {
     fetchMatches();
@@ -37,18 +40,51 @@ const FantasyCricket = () => {
     }
   };
 
-  const selectMatch = async (match) => {
+  const handleMatchClick = async (match) => {
     setSelectedMatch(match);
-    setView("team-builder");
 
-    try {
-      setLoading(true);
-      const data = await fantasyCricketAPI.getMatchPlayers(match.match_id);
-      setPlayers(data.players || []);
-    } catch (err) {
-      setError("Failed to fetch players");
-    } finally {
-      setLoading(false);
+    // UPCOMING → Team Builder
+    if (match.status === "upcoming") {
+      setView("team-builder");
+
+      try {
+        setLoading(true);
+        const data = await fantasyCricketAPI.getMatchPlayers(match.match_id);
+        setPlayers(data.players || []);
+      } catch (err) {
+        setError("Failed to fetch players");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // LIVE → LiveTeamView
+    else if (match.status === "live") {
+      try {
+        setLoading(true);
+        const data = await fantasyCricketAPI.getLeaderboard(match.match_id);
+        setLeaderboard(data.leaderboard || []);
+
+        const userTeam = data.leaderboard.find(
+          (t) => t.user_id === user.user_id,
+        );
+
+        if (userTeam) {
+          setMyTeam(userTeam);
+          setView("my-team"); // Direct LiveTeamView
+        } else {
+          setView("leaderboard"); // fallback
+        }
+      } catch (err) {
+        setError("Failed to load live match data");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // COMPLETED → Leaderboard
+    else {
+      viewLeaderboard(match);
     }
   };
 
@@ -129,7 +165,14 @@ const FantasyCricket = () => {
       const data = await fantasyCricketAPI.getLeaderboard(match.match_id);
       setLeaderboard(data.leaderboard || []);
       setSelectedMatch(match);
-      setView("leaderboard");
+      // Find the current user's team in the leaderboard
+      const userTeam = data.leaderboard.find((t) => t.user_id === user.user_id);
+      if (userTeam) {
+        setMyTeam(userTeam);
+        setView("my-team"); // Default to viewing their team if it exists
+      } else {
+        setView("leaderboard");
+      }
     } catch (err) {
       setError("Failed to fetch leaderboard");
     } finally {
@@ -185,16 +228,27 @@ const FantasyCricket = () => {
           </button>
           {selectedMatch && (
             <>
-              <button
-                onClick={() => setView("team-builder")}
-                className={`px-6 py-4 font-semibold transition-colors ${
-                  view === "team-builder"
-                    ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                👥 Team Builder
-              </button>
+              {selectedMatch.status === "upcoming" && (
+                <button
+                  onClick={() => setView("team-builder")}
+                  className={`px-6 py-4 font-semibold transition-colors ${
+                    view === "team-builder"
+                      ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  👥 Team Builder
+                </button>
+              )}
+              {/* Show My Team Tab if user has a team in this match */}
+              {myTeam && (
+                <button
+                  onClick={() => setView("my-team")}
+                  className={`px-6 py-4 font-semibold transition-colors whitespace-nowrap ${view === "my-team" ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  🛡️ My Live Team
+                </button>
+              )}
               <button
                 onClick={() => viewLeaderboard(selectedMatch)}
                 className={`px-6 py-4 font-semibold transition-colors ${
@@ -271,12 +325,15 @@ const FantasyCricket = () => {
                 </div>
 
                 <Button
-                  onClick={() => selectMatch(match)}
+                  onClick={() => handleMatchClick(match)}
                   variant="primary"
                   className="w-full"
-                  disabled={!["upcoming", "live"].includes(match.status)}
                 >
-                  {match.status === "upcoming" ? "Create Team" : "View Match"}
+                  {match.status === "upcoming"
+                    ? "Create Team"
+                    : match.status === "live"
+                      ? "View Match"
+                      : "View Results"}
                 </Button>
               </div>
             ))
@@ -514,6 +571,10 @@ const FantasyCricket = () => {
             </div>
           )}
         </div>
+      )}
+
+      {view === "my-team" && selectedMatch && (
+        <LiveTeamView team={myTeam} match={selectedMatch} />
       )}
     </div>
   );

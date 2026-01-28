@@ -5,12 +5,14 @@ import CreateAdminForm from "./CreateAdminForm";
 import GameProviderList from "./GameProviderList";
 import TenantAdminList from "./TenantAdminList";
 import CatalogManagement from "./CatalogManagement";
+import OwnerProfile from "../user/OwnerProfile";
 
 const OwnerDashboard = () => {
-  const [activeTab, setActiveTab] = useState("tenants");
+  const [activeTab, setActiveTab] = useState("stats");
   const [refreshAdmins, setRefreshAdmins] = useState(0);
 
   const tabs = [
+    { id: "stats", label: "Platform Overview", icon: '📈' },
     { id: "tenants", label: "Tenants", icon: "🏢" },
     { id: "regions", label: "Regions", icon: "🌍" },
     { id: "providers", label: "Game Providers", icon: "🎮" },
@@ -38,6 +40,7 @@ const OwnerDashboard = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
+        {activeTab === "stats" && <OwnerProfile />}
         {activeTab === "tenants" && <TenantManagement />}
         {activeTab === "regions" && <RegionManagement />}
         {activeTab === "providers" && <GameProviderList />}

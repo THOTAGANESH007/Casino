@@ -23,3 +23,23 @@ class TenantDashboardResponse(BaseModel):
     top_5_users_weekly: List[TopUser]
     game_popularity: List[GameStat]
     revenue_7d: List[DailyRevenue]
+    
+class TenantLeaderboardItem(BaseModel):
+    tenant_name: str
+    user_count: int
+    total_turnover: Decimal
+    revenue_contribution: Decimal
+
+class GlobalGameStat(BaseModel):
+    game_name: str
+    total_revenue: Decimal
+    play_count: int
+
+class OwnerDashboardResponse(BaseModel):
+    global_turnover: Decimal
+    global_net_revenue: Decimal
+    active_tenants_count: int
+    global_active_users_24h: int
+    system_liquidity: Decimal  # Total cash in all player wallets
+    tenant_leaderboard: List[TenantLeaderboardItem]
+    top_performing_games: List[GlobalGameStat]

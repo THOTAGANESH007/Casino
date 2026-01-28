@@ -4,6 +4,7 @@ import { useWallet } from "../../hooks/useWallet";
 import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
 import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const Blackjack = () => {
   const [gameState, setGameState] = useState(null);
@@ -12,6 +13,7 @@ const Blackjack = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { getCashBalance, fetchWallets } = useWallet();
+  const { currency } = useAuth();
 
   const startNewGame = async () => {
     if (betAmount > getCashBalance()) {
@@ -99,7 +101,7 @@ const Blackjack = () => {
           <div className="text-right">
             <p className="text-red-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(),currency)}
             </p>
           </div>
         </div>
@@ -115,7 +117,7 @@ const Blackjack = () => {
           </h2>
 
           <div className="max-w-md mx-auto mb-6">
-            <label className="label">Bet Amount ($)</label>
+            <label className="label">Bet Amount</label>
             <input
               type="number"
               value={betAmount}

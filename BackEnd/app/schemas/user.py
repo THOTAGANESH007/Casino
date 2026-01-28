@@ -40,6 +40,7 @@ class TenantAdminCreate(BaseModel):
     last_name: Optional[str] = None
     email: str
     password: str
+    phone: str
     tenant_id: int
 
 class UserProfileStats(BaseModel):

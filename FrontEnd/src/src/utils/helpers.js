@@ -1,5 +1,16 @@
-export const formatCurrency = (amount, decimals = 2) => {
-  return `$${parseFloat(amount).toFixed(decimals)}`;
+export const formatCurrency = (value, currencyCode) => { // default fallback to usd
+  const amount = parseFloat(value) || 0;
+  
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch (e) {
+    // Fallback if currency code is invalid
+    return `$${amount.toFixed(2)}`;
+  }
 };
 
 export const formatDate = (dateString) => {

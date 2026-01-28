@@ -169,6 +169,14 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
     user_dict = UserResponse.model_validate(current_user).model_dump()
+    if current_user.role == "casino_owner":
+        return user_dict
+    # Currency of the tenant
+    tenant = getattr(current_user, "tenant", None)
+    currency = getattr(tenant, "default_currency", None)
+
+    user_dict["currency"] = currency or "USD"
+    
     # Include KYC verified status
     if current_user.kyc:
         user_dict['is_kyc_verified'] = current_user.kyc.verified_status # To restrict login based on KYC status

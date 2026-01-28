@@ -16,6 +16,7 @@ const CreateAdminForm = ({ onSuccess }) => {
     first_name: "",
     last_name: "",
     email: "",
+    phone: "",
     password: "",
     tenant_id: "",
   });
@@ -73,6 +74,7 @@ const CreateAdminForm = ({ onSuccess }) => {
         first_name: "",
         last_name: "",
         email: "",
+        phone: "",
         password: "",
         tenant_id: "",
       });
@@ -129,6 +131,15 @@ const CreateAdminForm = ({ onSuccess }) => {
           onChange={handleChange}
           required
           placeholder="admin@tenant.com"
+        />
+
+        <Input
+            label="Phone"
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="+1234567890"
         />
 
         <Input

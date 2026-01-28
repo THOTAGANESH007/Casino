@@ -5,6 +5,7 @@ import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const Mines = () => {
   const [gameState, setGameState] = useState(null);
@@ -14,6 +15,7 @@ const Mines = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { getCashBalance, fetchWallets } = useWallet();
+  const {currency} = useAuth()
 
   const GRID_SIZE = 25; // 5x5 grid
 
@@ -102,7 +104,7 @@ const Mines = () => {
           <div className="text-right">
             <p className="text-yellow-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
         </div>
@@ -119,7 +121,7 @@ const Mines = () => {
 
           <div className="max-w-md mx-auto space-y-6">
             <Input
-              label="Bet Amount ($)"
+              label="Bet Amount"
               type="number"
               value={betAmount}
               onChange={(e) => setBetAmount(parseFloat(e.target.value))}
@@ -221,7 +223,7 @@ const Mines = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Bet Amount:</span>
-                  <span className="font-bold">{formatCurrency(betAmount)}</span>
+                  <span className="font-bold">{formatCurrency(betAmount, currency)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -253,7 +255,7 @@ const Mines = () => {
               </p>
               <p className="text-sm mt-2 text-primary-100">
                 Potential Win:{" "}
-                {formatCurrency(betAmount * gameState.multiplier)}
+                {formatCurrency(betAmount * gameState.multiplier, currency)}
               </p>
             </div>
 
@@ -298,7 +300,7 @@ const Mines = () => {
                     </p>
                     {gameState.game_won && (
                       <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(betAmount * gameState.multiplier)}
+                        {formatCurrency(betAmount * gameState.multiplier, currency)}
                       </p>
                     )}
                   </div>

@@ -6,6 +6,7 @@ import SuccessMessage from "../common/SuccessMessage";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const Crash = () => {
   const [betAmount, setBetAmount] = useState(10);
@@ -18,6 +19,8 @@ const Crash = () => {
   const [success, setSuccess] = useState("");
   const [multiplier, setMultiplier] = useState(1.0);
   const { getCashBalance, fetchWallets } = useWallet();
+  const {currency} = useAuth()
+  
 
   useEffect(() => {
     fetchCurrentGame();
@@ -71,7 +74,7 @@ const Crash = () => {
       const data = await crashAPI.cashout(currentGame);
       setSuccess(
         `Cashed out at ${data.cashout_multiplier}x! Won ${formatCurrency(
-          data.payout,
+          data.payout, currency
         )}`,
       );
       setUserBet(null);
@@ -105,7 +108,7 @@ const Crash = () => {
           <div className="text-right">
             <p className="text-pink-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
         </div>
@@ -207,7 +210,7 @@ const Crash = () => {
             {!userBet ? (
               <div className="space-y-4">
                 <Input
-                  label="Bet Amount ($)"
+                  label="Bet Amount"
                   type="number"
                   value={betAmount}
                   onChange={(e) => setBetAmount(parseFloat(e.target.value))}
@@ -249,7 +252,7 @@ const Crash = () => {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm text-green-800 mb-2">Your Bet</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(userBet.bet_amount)}
+                    {formatCurrency(userBet.bet_amount, currency)}
                   </p>
                   {userBet.auto_cashout && (
                     <p className="text-sm text-green-700 mt-1">
@@ -265,7 +268,7 @@ const Crash = () => {
                         Potential Win
                       </p>
                       <p className="text-3xl font-bold text-blue-600">
-                        {formatCurrency(userBet.bet_amount * multiplier)}
+                        {formatCurrency(userBet.bet_amount * multiplier, currency)}
                       </p>
                     </div>
 

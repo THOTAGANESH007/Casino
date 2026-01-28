@@ -39,8 +39,6 @@ const TenantManagement = () => {
 
   const toggleStatus = async (tenantId, currentStatus) => {
     try {
-      // Assuming you have an updateStatus endpoint in ownerAPI
-      // If not, you might need to add it to ownerAPI.js
       await ownerAPI.updateTenantStatus(tenantId, !currentStatus);
       setStatusMsg("Tenant status updated");
       fetchTenants();

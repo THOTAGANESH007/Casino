@@ -6,6 +6,7 @@ import SuccessMessage from "../common/SuccessMessage";
 import Input from "../common/Input";
 import Button from "../common/Button";
 import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const WithdrawModal = ({ onClose, maxAmount }) => {
   const [amount, setAmount] = useState("");
@@ -13,6 +14,7 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const { withdraw } = useWallet();
+  const { currency } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
     }
 
     if (withdrawAmount > maxAmount) {
-      setError(`Insufficient balance. Maximum: ${formatCurrency(maxAmount)}`);
+      setError(`Insufficient balance. Maximum: ${formatCurrency(maxAmount,currency)}`);
       return;
     }
 
@@ -36,7 +38,7 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
     setLoading(false);
 
     if (result.success) {
-      setSuccess(`Successfully withdrew ${formatCurrency(withdrawAmount)}`);
+      setSuccess(`Successfully withdrew ${formatCurrency(withdrawAmount,currency)}`);
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -53,12 +55,12 @@ const WithdrawModal = ({ onClose, maxAmount }) => {
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm font-semibold text-green-800">
-            Available Balance: {formatCurrency(maxAmount)}
+            Available Balance: {formatCurrency(maxAmount,currency)}
           </p>
         </div>
 
         <Input
-          label="Amount ($)"
+          label="Amount"
           type="number"
           step="0.01"
           value={amount}

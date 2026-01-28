@@ -5,6 +5,7 @@ import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const Slots = () => {
   const [betAmount, setBetAmount] = useState(10);
@@ -13,6 +14,7 @@ const Slots = () => {
   const [error, setError] = useState("");
   const [spinning, setSpinning] = useState(false);
   const { getCashBalance, fetchWallets } = useWallet();
+  const {currency} = useAuth()
 
   const handleSpin = async () => {
     if (betAmount > getCashBalance()) {
@@ -52,7 +54,7 @@ const Slots = () => {
           <div className="text-right">
             <p className="text-green-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
         </div>
@@ -64,7 +66,7 @@ const Slots = () => {
         {/* Bet Controls */}
         <div className="max-w-md mx-auto mb-8">
           <Input
-            label="Bet Amount ($)"
+            label="Bet Amount"
             type="number"
             value={betAmount}
             onChange={(e) => setBetAmount(parseFloat(e.target.value))}
@@ -112,7 +114,7 @@ const Slots = () => {
               <div className="bg-linear-to-r from-green-500 to-emerald-600 text-white rounded-xl p-6 mb-6">
                 <h2 className="text-4xl font-bold mb-4">🎉 You Win!</h2>
                 <p className="text-3xl font-bold">
-                  {formatCurrency(result.payout)}
+                  {formatCurrency(result.payout, currency)}
                 </p>
                 <p className="text-xl mt-2">
                   Multiplier: {result.total_multiplier}x

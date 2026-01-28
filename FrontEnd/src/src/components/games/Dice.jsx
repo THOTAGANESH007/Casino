@@ -5,6 +5,7 @@ import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { formatCurrency, generateRandomSeed } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const Dice = () => {
   const [betAmount, setBetAmount] = useState(10);
@@ -18,6 +19,7 @@ const Dice = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { getCashBalance, fetchWallets } = useWallet();
+  const {currency} = useAuth()
 
   useEffect(() => {
     setClientSeed(generateRandomSeed());
@@ -79,7 +81,7 @@ const Dice = () => {
           <div className="text-right">
             <p className="text-blue-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
         </div>
@@ -96,7 +98,7 @@ const Dice = () => {
 
           <div className="space-y-4">
             <Input
-              label="Bet Amount ($)"
+              label="Bet Amount"
               type="number"
               value={betAmount}
               onChange={(e) => setBetAmount(parseFloat(e.target.value))}
@@ -150,7 +152,7 @@ const Dice = () => {
                   Potential Win:
                 </span>
                 <span className="text-xl font-bold text-green-600">
-                  {formatCurrency(betAmount * multiplier)}
+                  {formatCurrency(betAmount * multiplier, currency)}
                 </span>
               </div>
             </div>
@@ -194,7 +196,7 @@ const Dice = () => {
                 </p>
                 {result.won && (
                   <p className="text-2xl font-bold">
-                    Payout: {formatCurrency(result.payout)}
+                    Payout: {formatCurrency(result.payout, currency)}
                   </p>
                 )}
               </div>

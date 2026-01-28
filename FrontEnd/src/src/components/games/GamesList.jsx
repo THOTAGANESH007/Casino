@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { gameAPI } from "../../api/game";
-import { useWallet } from "../../hooks/useWallet";
-import { formatCurrency } from "../../utils/helpers";
 import Loading from "../common/Loading";
 
 const GamesList = () => {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { getCashBalance } = useWallet();
 
   useEffect(() => {
     const fetchGames = async () => {

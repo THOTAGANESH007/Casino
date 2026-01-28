@@ -8,6 +8,7 @@ import Badge from "../common/Badge";
 import { formatCurrency } from "../../utils/helpers";
 import { storage } from "../../utils/storage";
 import { LiveTeamView } from "./LiveTeamView";
+import { useAuth } from "../../hooks/useAuth";
 const FantasyCricket = () => {
   const [matches, setMatches] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -23,6 +24,8 @@ const FantasyCricket = () => {
   const { getCashBalance, fetchWallets } = useWallet();
   const [myTeam, setMyTeam] = useState(null);
   const user = storage.getUser();
+  const {currency} = useAuth();
+  
 
   useEffect(() => {
     fetchMatches();
@@ -204,7 +207,7 @@ const FantasyCricket = () => {
           <div className="text-right">
             <p className="text-indigo-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
         </div>
@@ -300,7 +303,7 @@ const FantasyCricket = () => {
                   <div className="text-right">
                     <p className="text-sm text-gray-600">Entry Fee</p>
                     <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(match.entry_fee)}
+                      {formatCurrency(match.entry_fee, currency)}
                     </p>
                   </div>
                 </div>
@@ -309,7 +312,7 @@ const FantasyCricket = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Prize Pool:</span>
                     <span className="font-bold">
-                      {formatCurrency(match.prize_pool)}
+                      {formatCurrency(match.prize_pool, currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -494,7 +497,7 @@ const FantasyCricket = () => {
               >
                 {loading
                   ? "Submitting..."
-                  : `Submit Team (${formatCurrency(selectedMatch.entry_fee)})`}
+                  : `Submit Team (${formatCurrency(selectedMatch.entry_fee, currency)})`}
               </Button>
 
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -562,7 +565,7 @@ const FantasyCricket = () => {
                         {entry.total_points}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-bold text-green-600">
-                        {formatCurrency(entry.prize_amount)}
+                        {formatCurrency(entry.prize_amount, currency)}
                       </td>
                     </tr>
                   ))}

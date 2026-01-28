@@ -4,7 +4,7 @@ import { useWallet } from "../../hooks/useWallet";
 import { formatCurrency } from "../../utils/helpers";
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, isAdmin, isCasinoOwner } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isCasinoOwner,currency } = useAuth();
   const { getCashBalance } = useWallet();
   const navigate = useNavigate();
 
@@ -61,7 +61,7 @@ const Navbar = () => {
                       Wallet
                     </Link>
                     <div className="bg-green-600 px-4 py-2 rounded-lg font-semibold">
-                      💰 {formatCurrency(getCashBalance())}
+                      💰 {formatCurrency(getCashBalance(), currency)}
                     </div>
                     <Link
                       to="/profile"

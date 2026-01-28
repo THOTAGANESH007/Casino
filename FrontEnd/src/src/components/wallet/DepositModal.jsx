@@ -5,6 +5,8 @@ import ErrorMessage from "../common/ErrorMessage";
 import SuccessMessage from "../common/SuccessMessage";
 import Input from "../common/Input";
 import Button from "../common/Button";
+import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const DepositModal = ({ onClose }) => {
   const [amount, setAmount] = useState("");
@@ -12,6 +14,7 @@ const DepositModal = ({ onClose }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const { deposit } = useWallet();
+  const {currency} = useAuth();
 
   const quickAmounts = [10, 50, 100, 500, 1000];
 
@@ -33,7 +36,7 @@ const DepositModal = ({ onClose }) => {
     if (!result.redirect) {
       setLoading(false);
       if (result.success) {
-        setSuccess(`Successfully deposited $${depositAmount.toFixed(2)}`);
+        setSuccess(`Successfully deposited ${depositAmount.toFixed(2)}`);
         setTimeout(() => {
           onClose();
         }, 2000);
@@ -50,7 +53,7 @@ const DepositModal = ({ onClose }) => {
         <SuccessMessage message={success} onClose={() => setSuccess("")} />
 
         <Input
-          label="Amount ($)"
+          label="Amount"
           type="number"
           step="0.01"
           value={amount}
@@ -69,7 +72,7 @@ const DepositModal = ({ onClose }) => {
                 onClick={() => setAmount(amt.toString())}
                 className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold cursor-pointer"
               >
-                ${amt}
+                {formatCurrency(amt,currency)}
               </button>
             ))}
           </div>

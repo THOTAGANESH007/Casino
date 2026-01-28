@@ -407,6 +407,7 @@ async def create_admin_user_for_tenant(
         password=hashed_password,
         first_name=admin_data.first_name,
         last_name=admin_data.last_name,
+        phone=admin_data.phone,
         role=UserType.admin,
         tenant_id=admin_data.tenant_id,
         is_active=True

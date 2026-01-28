@@ -8,6 +8,7 @@ import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
 import { useSearchParams } from "react-router-dom";
 import { walletAPI } from "../../api/wallet";
+import { useAuth } from "../../hooks/useAuth";
 
 const WalletOverview = () => {
   const {
@@ -22,6 +23,7 @@ const WalletOverview = () => {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusMsg, setStatusMsg] = useState("");
+  const {currency} = useAuth()
 
   useEffect(() => {
     // Check URL for Stripe redirect params
@@ -87,7 +89,7 @@ const WalletOverview = () => {
           </div>
           <div className="mb-2">
             <p className="text-4xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
           <p className="text-green-100 text-sm">Available for play</p>
@@ -105,7 +107,7 @@ const WalletOverview = () => {
           </div>
           <div className="mb-2">
             <p className="text-4xl font-bold">
-              {formatCurrency(getBonusBalance())}
+              {formatCurrency(getBonusBalance(), currency)}
             </p>
           </div>
           <p className="text-purple-100 text-sm">Promotional funds</p>
@@ -174,7 +176,7 @@ const WalletOverview = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-900">
                     {wallet.type_of_wallet === "points"
                       ? parseFloat(wallet.balance).toFixed(0)
-                      : formatCurrency(wallet.balance)}
+                      : formatCurrency(wallet.balance, currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     #{wallet.wallet_id}

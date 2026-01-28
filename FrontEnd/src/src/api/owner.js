@@ -62,12 +62,19 @@ export const ownerAPI = {
   },
 
   updateTenantAdminStatus: async (userId, isActive) => {
-    // Fixed: Use backticks
     const response = await api.patch(`/admin/tenant-admins/${userId}/status`, null, {
       params: { is_active: isActive },
     });
     return response.data;
   },
+
+  updateTenantStatus: async (tenantId, isActive) => {
+    const response = await api.patch(`/admin/tenants/${tenantId}/status`, null, {
+      params: { status: isActive },
+    });
+    return response.data;
+  },
+
 
   // Games Management
   getBaseGames: async () => {

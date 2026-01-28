@@ -4,6 +4,7 @@ import { useWallet } from "../../hooks/useWallet";
 import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
 import { formatCurrency } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 const Roulette = () => {
   const [bets, setBets] = useState([]);
@@ -13,6 +14,7 @@ const Roulette = () => {
   const [tableInfo, setTableInfo] = useState(null);
   const [spinning, setSpinning] = useState(false);
   const { getCashBalance, fetchWallets } = useWallet();
+  const {currency} = useAuth()
 
   // Roulette numbers with colors
   const redNumbers = [
@@ -107,7 +109,7 @@ const Roulette = () => {
           <div className="text-right">
             <p className="text-purple-100 text-sm mb-1">Balance</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance())}
+              {formatCurrency(getCashBalance(), currency)}
             </p>
           </div>
         </div>
@@ -287,7 +289,7 @@ const Roulette = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="font-bold text-gray-900">
-                        ${bet.bet_amount}
+                        {formatCurrency(bet.bet_amount,currency)}
                       </span>
                       <button
                         onClick={() => removeBet(index)}
@@ -305,7 +307,7 @@ const Roulette = () => {
               <div className="flex justify-between items-center text-lg font-bold">
                 <span>Total Bet:</span>
                 <span className="text-primary-600">
-                  {formatCurrency(getTotalBet())}
+                  {formatCurrency(getTotalBet(), currency)}
                 </span>
               </div>
             </div>
@@ -365,7 +367,7 @@ const Roulette = () => {
               >
                 <p className="text-sm text-gray-600 mb-1">Total Payout</p>
                 <p className="text-3xl font-bold mb-2">
-                  {formatCurrency(result.total_payout)}
+                  {formatCurrency(result.total_payout, currency)}
                 </p>
                 <p
                   className={`text-sm font-semibold ${
@@ -375,7 +377,7 @@ const Roulette = () => {
                   }`}
                 >
                   {result.total_payout > result.total_bet ? "+" : ""}
-                  {formatCurrency(result.net_result)}
+                  {formatCurrency(result.net_result, currency)}
                 </p>
               </div>
 
@@ -395,7 +397,7 @@ const Roulette = () => {
                         >
                           <span>{bet.bet_type}</span>
                           <span className="font-bold text-green-600">
-                            {formatCurrency(bet.payout)}
+                            {formatCurrency(bet.payout, currency)}
                           </span>
                         </div>
                       ))}

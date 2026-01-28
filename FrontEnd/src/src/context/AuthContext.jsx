@@ -115,6 +115,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     isAuthenticated,
+    currency:user?.currency,
     login,
     signup,
     logout,

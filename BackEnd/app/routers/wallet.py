@@ -38,55 +38,55 @@ async def get_wallet_by_type(
         )
     return wallet
 
-@router.post("/deposit", response_model=WalletResponse)
-async def deposit_to_wallet(
-    deposit_data: WalletDeposit,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Deposit money to cash wallet"""
+# @router.post("/deposit", response_model=WalletResponse)
+# async def deposit_to_wallet(
+#     deposit_data: WalletDeposit,
+#     current_user: User = Depends(get_current_active_user),
+#     db: Session = Depends(get_db)
+# ):
+#     """Deposit money to cash wallet"""
     
-    # Get cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cash wallet not found"
-        )
+#     # Get cash wallet
+#     wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+#     if not wallet:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="Cash wallet not found"
+#         )
     
-    # Credit wallet
-    updated_wallet = wallet_service.credit_wallet(
-        db,
-        wallet.wallet_id,
-        deposit_data.amount
-    )
+#     # Credit wallet
+#     updated_wallet = wallet_service.credit_wallet(
+#         db,
+#         wallet.wallet_id,
+#         deposit_data.amount
+#     )
     
-    return updated_wallet
+#     return updated_wallet
 
-@router.post("/withdraw", response_model=WalletResponse)
-async def withdraw_from_wallet(
-    withdraw_data: WalletWithdraw,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Withdraw money from cash wallet"""
+# @router.post("/withdraw", response_model=WalletResponse)
+# async def withdraw_from_wallet(
+#     withdraw_data: WalletWithdraw,
+#     current_user: User = Depends(get_current_active_user),
+#     db: Session = Depends(get_db)
+# ):
+#     """Withdraw money from cash wallet"""
     
-    # Get cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
-    if not wallet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cash wallet not found"
-        )
+#     # Get cash wallet
+#     wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+#     if not wallet:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="Cash wallet not found"
+#         )
     
-    # Debit wallet
-    updated_wallet = wallet_service.debit_wallet(
-        db,
-        wallet.wallet_id,
-        withdraw_data.amount
-    )
+#     # Debit wallet
+#     updated_wallet = wallet_service.debit_wallet(
+#         db,
+#         wallet.wallet_id,
+#         withdraw_data.amount
+#     )
     
-    return updated_wallet
+#     return updated_wallet
 
 
 # 1. Initiate Deposit
@@ -99,11 +99,14 @@ async def create_deposit_session(
     """Generate Stripe Checkout Link"""
     if deposit_data.amount < 1:
         raise HTTPException(status_code=400, detail="Minimum deposit is 1.00")
+    
+    currency = current_user.tenant.default_currency
 
     try:
         checkout_url = stripe_service.create_checkout_session(
             user_id=current_user.user_id,
-            amount=deposit_data.amount
+            amount=deposit_data.amount,
+            currency=currency
         )
         return {"checkout_url": checkout_url}
     except Exception as e:
@@ -141,7 +144,6 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None),
             if wallet:
                 # Credit the wallet atomically
                 wallet_service.credit_wallet(db, wallet.wallet_id, amount_paid)
-                print(f"💰 Funded User {user_id} with ${amount_paid}")
             else:
                 print(f"❌ Wallet not found for User {user_id}")
 
@@ -156,11 +158,21 @@ async def withdraw_funds(
 ):
     """Withdraw funds from wallet via Stripe"""
     
-    # 1. Get Wallet
+    # 1.1 Get Wallet
     wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
     if not wallet or wallet.balance < withdraw_data.amount:
         raise HTTPException(status_code=400, detail="Insufficient funds")
-
+    
+    # 1.2 Fetch tax rate from the user's region
+    tax_rate = wallet_service.get_user_tax_rate(db, current_user.user_id)
+    
+    # 1.3 Calculate tax
+    tax_to_deduct = (withdraw_data.amount * (tax_rate / Decimal("100"))).quantize(Decimal("0.01")) # round to 2 decimal places
+    amount_after_tax = withdraw_data.amount - tax_to_deduct
+    
+    # currency of the tenant
+    currency = current_user.tenant.default_currency
+    
     # 2. Debit Wallet FIRST (Internal ledger update)
     try:
         wallet_service.debit_wallet(db, wallet.wallet_id, withdraw_data.amount)
@@ -169,14 +181,17 @@ async def withdraw_funds(
 
     # 3. Trigger Stripe Payout
     try:
-        # In a real app, you would retrieve the user's stripe_connect_id from the DB
+        # In a real app, we'd retrieve the user's stripe_connect_id from the DB
         # For now, we mock the ID or leave it None to trigger the mock logic in service
-        stripe_service.create_payout(withdraw_data.amount, destination_account_id=None)
+        stripe_service.create_payout(amount_after_tax, currency, destination_account_id=None)
         
         return {
             "wallet_id": wallet.wallet_id,
             "balance": wallet.balance, # Updated balance
-            "message": "Withdrawal processed successfully"
+            "message": "Withdrawal processed successfully",
+            "status": "success",
+            "tax_withheld": tax_to_deduct,
+            "sent_to_user": amount_after_tax
         }
     except Exception as e:
         # CRITICAL: Rollback money if Stripe fails

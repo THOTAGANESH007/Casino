@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import timezone, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -135,7 +135,7 @@ async def hit(
         
         # If game over, settle
         if game_state["game_over"]:
-            await _settle_blackjack_game(session_id, engine, db)
+            await _settle_blackjack_game(session_id, engine, current_user.user_id, db)
         
         return {"game_state": game_state}
     
@@ -174,7 +174,7 @@ async def stand(
     
     try:
         game_state = engine.stand()
-        await _settle_blackjack_game(session_id, engine, db)
+        await _settle_blackjack_game(session_id, engine, current_user.user_id, db)
         
         return {"game_state": game_state}
     
@@ -229,7 +229,7 @@ async def double_down(
     
     try:
         game_state = engine.double_down()
-        await _settle_blackjack_game(session_id, engine, db)
+        await _settle_blackjack_game(session_id, engine, current_user.user_id, db)
         
         return {"game_state": game_state}
     
@@ -241,7 +241,7 @@ async def double_down(
             detail=str(e)
         )
 
-async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine, db: Session):
+async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine,user_id:int, db: Session):
     """Settle blackjack game and update wallet"""
     
     # Get bet
@@ -249,13 +249,11 @@ async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine, db: S
         GameRound.session_id == session_id
     ).first()
     
+    game = db.query(Game).filter(Game.game_name == "Blackjack").first()
     bet = db.query(Bet).filter(Bet.round_id == round_obj.round_id).first()
     
     # Calculate payout
     payout = engine.calculate_payout(bet.bet_amount)
-    
-    # Update bet
-    bet.payout_amount = payout
     
     if engine.result in ["win", "blackjack"]:
         bet.bet_status = BetStatus.won
@@ -268,10 +266,9 @@ async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine, db: S
     
     # Credit payout to wallet
     if payout > 0:
-        wallet_service.credit_wallet(db, bet.wallet_id, payout, commit=True)
+        wallet_service.credit_winnings(db, user_id, payout, game.game_id, bet.bet_id)
     
     # Close session
-    from datetime import datetime
     session = db.query(GameSession).filter(
         GameSession.session_id == session_id
     ).first()

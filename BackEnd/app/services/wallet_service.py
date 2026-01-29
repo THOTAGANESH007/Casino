@@ -2,10 +2,22 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 from typing import Dict, Optional
 from fastapi import HTTPException, status
+
+from ..models.game import Bet, Game
+from ..models.user import User
 from ..models.wallet import Wallet, WalletType
 from .limit_service import limit_service
 class WalletService:
     """Server-authoritative wallet service with atomic transactions"""
+    
+    @staticmethod
+    def get_user_tax_rate(db: Session, user_id: int) -> Decimal:
+        """Fetch tax rate directly from the user's assigned region"""
+        user = db.query(User).filter(User.user_id == user_id).first()
+        # If user has a region assigned, use that tax rate, otherwise 0
+        if user and user.region:
+            return user.region.tax_rate
+        return Decimal("0")
     
     @staticmethod
     def create_wallets_for_user(db: Session, user_id: int) -> list[Wallet]:
@@ -26,7 +38,6 @@ class WalletService:
         db.commit()
         for wallet in wallets:
             db.refresh(wallet)
-        print("Wallets created for user_id:", user_id)
         # return wallets
     
     @staticmethod
@@ -166,18 +177,34 @@ class WalletService:
 
 
     @staticmethod
-    def credit_winnings(db: Session, user_id: int, amount: Decimal):
+    def credit_winnings(db: Session, user_id: int, amount: Decimal, game_id: int, bet_id: int = None):
         """
-        Credit Winnings.
-        Rule: Winnings usually go to Cash wallet.
+        1. Applies Game RTP
+        2. Credits Net to Wallet after step 1
         """
+        # 1. Apply RTP (Return to Player) 
+        
+        # Fetch the game to get its specific RTP percentage
+        game = db.query(Game).filter(Game.game_id == game_id).first()
+        rtp_multiplier = (game.rtp_percent / Decimal("100")) if game else Decimal("1")
+        
+        # Gross amount after RTP reduction
+        net_payout = (amount * rtp_multiplier).quantize(Decimal("0.01"))
+        
+
+        # Update Bet record if ID provided
+        if bet_id:
+            bet = db.query(Bet).filter(Bet.bet_id == bet_id).first()
+            if bet:
+                bet.payout_amount = net_payout
+                
         wallet = db.query(Wallet).filter(
             Wallet.user_id == user_id, 
             Wallet.type_of_wallet == WalletType.cash
         ).with_for_update().first()
         
         if wallet:
-            wallet.balance += amount
+            wallet.balance += net_payout
             db.commit()
             db.refresh(wallet)
         return wallet

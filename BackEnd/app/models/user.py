@@ -29,9 +29,11 @@ class User(Base):
     is_active = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     forgot_password_otp = Column(String, nullable=True)
+    region_id = Column(Integer, ForeignKey("tenant_regions.region_id"), nullable=True)
     
     # Relationships
     tenant = relationship("Tenant", back_populates="users")
+    region = relationship("TenantRegion", back_populates="users")
     kyc = relationship("UserKYC", back_populates="user", uselist=False)
     wallets = relationship("Wallet", back_populates="user")
     game_sessions = relationship("GameSession", back_populates="user")

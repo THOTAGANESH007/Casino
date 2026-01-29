@@ -29,6 +29,7 @@ class UserResponse(BaseModel):
     phone: Optional[str]
     role: UserType
     tenant_id: Optional[int]
+    region_id: Optional[int]
     is_active: bool
     created_at: datetime
     

@@ -70,7 +70,7 @@ async def spin_slots(
     
     # Credit payout if won
     if result["payout"] > 0:
-        wallet_service.credit_winnings(db, current_user.user_id, result["payout"])
+        wallet_service.credit_winnings(db, current_user.user_id, result["payout"], game.game_id, bet_record.bet_id)
     
     # Close session
     from datetime import datetime

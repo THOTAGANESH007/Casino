@@ -77,8 +77,9 @@ async def select_region(
             detail="Region not found"
         )
     
-    # Assign tenant
+    # Assign tenant and save the region of the user
     current_user.tenant_id = region.tenant_id
+    current_user.region_id = region.region_id
     
     # Create wallets for the user
     wallet_service.create_wallets_for_user(db, current_user.user_id)

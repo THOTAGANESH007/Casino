@@ -169,7 +169,7 @@ async def settle_match(match_code: str, db: Session = Depends(get_db)):
                 associated_bet.payout_amount = prize
                 
                 # Credit the winnings to the user's wallet
-                wallet_service.credit_winnings(db, team.user_id, prize)
+                wallet_service.credit_winnings(db, team.user_id, prize, fantasy_game_type.game_id, associated_bet.bet_id)
             else:
                 # LOSER FLOW
                 associated_bet.bet_status = BetStatus.lost
@@ -248,14 +248,15 @@ async def create_team(
     
     # 2. Get Players from DB
     selected_players = db.query(FantasyPlayer).filter(FantasyPlayer.id.in_(data.player_ids)).all()
+    fantasy_game_type = db.query(Game).filter(Game.game_name == "Fantasy Cricket").first()
     
     if len(selected_players) != 11:
-        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee) # Refund
+        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee, fantasy_game_type.game_id) # Refund
         raise HTTPException(status_code=400, detail="Must select 11 players")
         
     total_cost = sum(p.credit_value for p in selected_players)
     if total_cost > match.max_budget:
-        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee) # Refund
+        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee, fantasy_game_type.game_id) # Refund
         raise HTTPException(status_code=400, detail="Budget exceeded")
 
     # 3. Create Team

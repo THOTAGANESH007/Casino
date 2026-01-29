@@ -130,7 +130,7 @@ async def reveal_tile(
         
         # If game over (hit mine or won), settle
         if result["game_over"]:
-            await _settle_mines_game(session_id, engine, db)
+            await _settle_mines_game(session_id, engine,current_user.user_id, db)
         
         return {
             "session_id": session_id,
@@ -174,7 +174,7 @@ async def cashout_mines(
     
     try:
         result = engine.cash_out()
-        await _settle_mines_game(session_id, engine, db)
+        await _settle_mines_game(session_id, engine,current_user.user_id, db)
         
         return {
             "session_id": session_id,
@@ -221,14 +221,14 @@ async def get_game_state(
         "game_state": engine.get_game_state(hide_mines=not engine.game_over)
     }
 
-async def _settle_mines_game(session_id: int, engine: MinesEngine, db: Session):
+async def _settle_mines_game(session_id: int, engine: MinesEngine,user_id: int, db: Session):
     """Settle mines game and update wallet"""
     
     # Get bet
     round_obj = db.query(GameRound).filter(
         GameRound.session_id == session_id
     ).first()
-    
+    game = db.query(Game).filter(Game.game_name == "Mines").first()
     bet = db.query(Bet).filter(Bet.round_id == round_obj.round_id).first()
     
     # Calculate payout
@@ -241,7 +241,7 @@ async def _settle_mines_game(session_id: int, engine: MinesEngine, db: Session):
     
     # Credit payout to wallet
     if payout > 0:
-        wallet_service.credit_winnings(db, engine.user_id, payout)
+        wallet_service.credit_winnings(db, user_id, payout, game.game_id, bet.bet_id)
     
     # Close session
     from datetime import datetime

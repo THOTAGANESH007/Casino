@@ -11,9 +11,9 @@ class StripeService:
         
         # Stripe expects amount in cents (integers)
         amount_cents = int(amount * 100)
-        print(settings.FRONTEND_URL)
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
+            billing_address_collection='required',
             line_items=[{
                 'price_data': {
                     'currency': currency.lower(),
@@ -32,10 +32,7 @@ class StripeService:
                 "user_id": str(user_id),
                 "transaction_type": "deposit"
             }
-
         )
-        print("SUCCESS URL:", f"{settings.FRONTEND_URL}/wallet?status=success")
-        print("CANCEL URL:", f"{settings.FRONTEND_URL}/wallet?status=cancel")
         return session.url
 
     @staticmethod
@@ -48,7 +45,7 @@ class StripeService:
         amount_cents = int(amount * 100)
         
         try:
-            # In a real Connect scenario, you'd use stripe.Transfer to a connected account
+            # In a real Connect scenario, we'd use stripe.Transfer to a connected account
             # For this demo, we simulate a payout failure if no destination is provided
             if not destination_account_id:
                 # Mock success for demo purposes if no real Stripe Connect setup

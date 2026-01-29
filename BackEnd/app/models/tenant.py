@@ -28,3 +28,4 @@ class TenantRegion(Base):
     
     # Relationships
     tenant = relationship("Tenant", back_populates="regions")
+    users = relationship("User", back_populates="region")

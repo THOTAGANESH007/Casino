@@ -106,7 +106,7 @@ async def join_crash_game(
     
     if not success:
         # Refund
-        wallet_service.credit_winnings(db, current_user.user_id, bet_data.bet_amount)
+        wallet_service.credit_winnings(db, current_user.user_id, bet_data.bet_amount, game.game_id,bet_record.bet_id)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to join game"
@@ -178,7 +178,7 @@ async def cashout_crash(
         db.commit()
         
         # Credit payout
-        wallet_service.credit_winnings(db, current_user.user_id, result["payout"])
+        wallet_service.credit_winnings(db, current_user.user_id, result["payout"], game_id, bet.bet_id)
         
         # Close session
         session.ended_at = datetime.now(timezone.utc)

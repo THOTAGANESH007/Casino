@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import timezone, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -104,10 +104,9 @@ async def spin_roulette(
     
     # Credit total payout to wallet if any wins
     if result["total_payout"] > 0:
-        wallet_service.credit_wallet(db, wallet.wallet_id, result["total_payout"])
+        wallet_service.credit_winnings(db, current_user.user_id, result["total_payout"],game.game_id, bet_record.bet_id)
     
     # Close session
-    from datetime import datetime
     session.ended_at = datetime.now(timezone.utc)
     db.commit()
     

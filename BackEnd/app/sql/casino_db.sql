@@ -51,7 +51,8 @@ created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 forgot_password_otp TEXT
 );
 
--- select * from users;
+select * from users;
+select * from tenant_regions;
 
 -- UPDATE users
 -- SET role = 'casino_owner'
@@ -194,20 +195,25 @@ placed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 -- JACKPOT
 -- =========================
 
-CREATE TABLE jackpot(
+CREATE TABLE jackpots(
 jackpot_id SERIAL PRIMARY KEY,
-game_id INT REFERENCES game(game_id),
-current_amount NUMERIC(18,2)
+tenant_id INT REFERENCES tenants(tenant_id),
+name TEXT,
+current_amount numeric(18,2) default 1000,
+start_amount numeric(18,2) default 1000,
+contribution_percent numeric(5,4) default 0.01,
+win_probability numeric(10,9),
+is_active boolean default true,
+updated_at timestamp default current_timestamp
 );
 
-CREATE TABLE jackpot_win(
-win_id SERIAL PRIMARY KEY,
-jackpot_id INT REFERENCES jackpot(jackpot_id),
+CREATE TABLE jackpot_wins(
+jackpot_win_id SERIAL PRIMARY KEY,
+jackpot_id INT REFERENCES jackpots(jackpot_id),
 user_id INT REFERENCES users(user_id),
-win_amount NUMERIC(18,2),
-won_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+amount_won numeric(18,2),
+won_at timestamp default current_timestamp
 );
-
 
 CREATE TABLE responsible_limits(
 limit_id SERIAL PRIMARY KEY,

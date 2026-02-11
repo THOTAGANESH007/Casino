@@ -21,6 +21,11 @@ export const walletAPI = {
     return response.data;
   },
 
+  simulateWithdrawal: async (amount) => {
+    const response = await api.post(`/wallet/withdraw/simulate`, { amount });
+    return response.data;
+  },
+
   // deposit: async (amount) => {
   //   const response = await api.post("/wallet/deposit", { amount });
   //   return response.data;

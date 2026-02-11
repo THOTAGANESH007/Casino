@@ -194,6 +194,31 @@ async def withdraw_funds(
             "sent_to_user": amount_after_tax
         }
     except Exception as e:
-        # CRITICAL: Rollback money if Stripe fails
+        # Rollback money if Stripe fails
         wallet_service.credit_wallet(db, wallet.wallet_id, withdraw_data.amount)
         raise HTTPException(status_code=500, detail=f"Payout failed: {str(e)}")
+
+
+@router.post("/withdraw/simulate")
+async def simulate_withdrawal(
+    withdraw_data: WalletWithdraw,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Calculates tax and net payout without executing transaction"""
+    
+    # 1. Get the user tax rate
+    tax_rate = wallet_service.get_user_tax_rate(db, current_user.user_id)
+    
+    # 2. Perform Math
+    tax_amount = (withdraw_data.amount * (tax_rate / Decimal("100"))).quantize(Decimal("0.01"))
+    net_payout = withdraw_data.amount - tax_amount
+    
+    # 3. Return Data
+    return {
+        "requested_amount": withdraw_data.amount,
+        "tax_rate": tax_rate,
+        "tax_amount": tax_amount,
+        "net_payout": net_payout,
+        "currency": current_user.tenant.default_currency or "USD"
+    }

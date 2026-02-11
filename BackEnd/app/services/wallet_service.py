@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 from typing import Dict, Optional
 from fastapi import HTTPException, status
-
 from ..models.game import Bet, Game
 from ..models.user import User
 from ..models.wallet import Wallet, WalletType
 from .limit_service import limit_service
+from ..services import jackpot_service
 class WalletService:
     """Server-authoritative wallet service with atomic transactions"""
     
@@ -265,7 +265,14 @@ class WalletService:
             bonus_wallet.balance -= deducted_bonus
         if points_wallet:
             points_wallet.balance -= deducted_points*10  # Convert back to points
-
+        
+        # 5. Process Jackpot Logic if real cash was used
+        user = db.query(User).filter(User.user_id == user_id).first()
+        jackpot_result = {"won": False}
+        if user and required_cash > 0:
+             jackpot_result = jackpot_service.process_spin(
+                 db, user_id, user.tenant_id, required_cash
+             )
         # 5. Award New Points (Loyalty Program)
         # Rule: Earn 1 Point for every $10 bet (10% ratio).
         points_earned = total_bet * Decimal("0.10")
@@ -281,7 +288,8 @@ class WalletService:
             "deducted_cash": required_cash,
             "deducted_bonus": deducted_bonus,
             "deducted_points": deducted_points*10,
-            "points_earned": points_earned
+            "points_earned": points_earned,
+            "jackpot_result": jackpot_result
         }
 
 wallet_service = WalletService()

@@ -6,7 +6,8 @@ from ..models.game import Bet, Game
 from ..models.user import User
 from ..models.wallet import Wallet, WalletType
 from .limit_service import limit_service
-from ..services import jackpot_service
+# from ..services import jackpot_service
+from .jackpot_service import jackpot_service
 class WalletService:
     """Server-authoritative wallet service with atomic transactions"""
     

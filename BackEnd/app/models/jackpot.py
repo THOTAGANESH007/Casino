@@ -6,7 +6,7 @@ from ..database import Base
 class Jackpot(Base):
     __tablename__ = "jackpots"
     
-    id = Column(Integer, primary_key=True, index=True)
+    jackpot_id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.tenant_id"))
     name = Column(String) # e.g., "High Roller Pot"
     
@@ -22,8 +22,8 @@ class Jackpot(Base):
 class JackpotWin(Base):
     __tablename__ = "jackpot_wins"
     
-    id = Column(Integer, primary_key=True, index=True)
-    jackpot_id = Column(Integer, ForeignKey("jackpots.id"))
+    jackpot_win_id = Column(Integer, primary_key=True, index=True)
+    jackpot_id = Column(Integer, ForeignKey("jackpots.jackpot_id"))
     user_id = Column(Integer, ForeignKey("users.user_id"))
     amount_won = Column(Numeric(18, 2))
     won_at = Column(TIMESTAMP(timezone=True), server_default=func.now())

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from decimal import Decimal
 
 class JackpotResponse(BaseModel):
-    id: int
+    jackpot_id: int
     name: str
     current_amount: Decimal
     

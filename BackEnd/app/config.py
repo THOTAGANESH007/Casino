@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str
     STRIPE_WEBHOOK_SECRET: str
     FRONTEND_URL: str = "http://localhost:5173"
-
+    
+    # Fantasy Cricket
+    FANTASY_CRICKET_URI: str
+    FANTASY_CRICKET_API: str
+    
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000,https://casino-online-gaming.vercel.app"
     

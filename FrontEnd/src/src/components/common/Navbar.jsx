@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useWallet } from "../../hooks/useWallet";
 import { formatCurrency } from "../../utils/helpers";
@@ -22,6 +22,17 @@ const Navbar = () => {
     setFormattedBalance(formatCurrency(bal, currency));
   }, [currency, getCashBalance]);
 
+  const location = useLocation();
+  const restrictedRoutes = [
+    "/select-region",
+    "/submit-kyc",
+    "/pending-verification",
+    "/suspended-account",
+  ];
+
+  // Check if current path is restricted
+  const isRestrictedView = restrictedRoutes.includes(location.pathname);
+
   return (
     <nav className="bg-linear-to-r from-casino-dark to-casino-accent text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,7 +50,7 @@ const Navbar = () => {
 
           {/* Navigation */}
           <div className="flex items-center space-x-4">
-            {isAuthenticated ? (
+            {isAuthenticated && !isRestrictedView ? (
               <>
                 {isAdmin ? (
                   <Link

@@ -32,8 +32,13 @@ const Signup = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
+    const passwordRegex =
+      "^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$";
+
+    if (!passwordRegex.test(formData.password)) {
+      setError(
+        "Password must be at least 8 characters and include a letter, number, and special character",
+      );
       return;
     }
 
@@ -96,7 +101,8 @@ const Signup = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            placeholder="+1234567890"
+            maxlength={10}
+            placeholder="1234567890"
           />
 
           <Input
@@ -104,9 +110,10 @@ const Signup = () => {
             type="password"
             name="password"
             value={formData.password}
+            minlength={8}
             onChange={handleChange}
             required
-            placeholder="Minimum 6 characters"
+            placeholder="Minimum 8 characters"
           />
 
           <Input
@@ -114,6 +121,7 @@ const Signup = () => {
             type="password"
             name="confirmPassword"
             value={formData.confirmPassword}
+            minlength={8}
             onChange={handleChange}
             required
             placeholder="Re-enter password"

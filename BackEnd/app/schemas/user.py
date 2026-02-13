@@ -8,7 +8,8 @@ class UserSignup(BaseModel):
     last_name: Optional[str] = None
     email: EmailStr
     phone: Optional[str] = None
-    password: str
+    password: str = Field(min_length=8,regex="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$", description="Password must be at least 8 characters and include a letter, number, and special character")
+
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -80,7 +81,7 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str
     otp: str
-    new_password: str
+    new_password: str = Field(min_length=8,regex="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$", description="Password must be at least 8 characters and include a letter, number, and special character")
 
 class LimitSet(BaseModel):
     daily_loss_limit: Optional[Decimal] = Field(None, ge=0)

@@ -48,6 +48,16 @@ const CreateAdminForm = ({ onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const passwordRegex =
+      "^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$";
+
+    if (!passwordRegex.test(formData.password)) {
+      setError(
+        "Password must be at least 8 characters and include a letter, number, and special character",
+      );
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -134,12 +144,13 @@ const CreateAdminForm = ({ onSuccess }) => {
         />
 
         <Input
-            label="Phone"
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="+1234567890"
+          label="Phone"
+          type="tel"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          maxLength={10}
+          placeholder="1234567890"
         />
 
         <Input

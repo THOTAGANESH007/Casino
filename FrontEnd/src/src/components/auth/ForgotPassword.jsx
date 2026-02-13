@@ -49,8 +49,13 @@ const ForgotPassword = () => {
       return;
     }
 
-    if (formData.newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+    const passwordRegex =
+      "^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$";
+
+    if (!passwordRegex.test(formData.password)) {
+      setError(
+        "Password must be at least 8 characters and include a letter, number, and special character",
+      );
       return;
     }
 
@@ -132,6 +137,7 @@ const ForgotPassword = () => {
               onChange={(e) =>
                 setFormData({ ...formData, newPassword: e.target.value })
               }
+              minlength={8}
               required
               placeholder="******"
             />
@@ -139,6 +145,7 @@ const ForgotPassword = () => {
               label="Confirm Password"
               type="password"
               value={formData.confirmPassword}
+              minlength={8}
               onChange={(e) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }

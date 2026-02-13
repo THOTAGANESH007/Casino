@@ -2,9 +2,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useWallet } from "../../hooks/useWallet";
 import { formatCurrency } from "../../utils/helpers";
+import { useEffect, useState } from "react";
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, isAdmin, isCasinoOwner,currency } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isCasinoOwner, currency } =
+    useAuth();
   const { getCashBalance } = useWallet();
   const navigate = useNavigate();
 
@@ -12,6 +14,13 @@ const Navbar = () => {
     logout();
     navigate("/login");
   };
+
+  const [formattedBalance, setFormattedBalance] = useState("");
+
+  useEffect(() => {
+    const bal = getCashBalance();
+    setFormattedBalance(formatCurrency(bal, currency));
+  }, [currency, getCashBalance]);
 
   return (
     <nav className="bg-linear-to-r from-casino-dark to-casino-accent text-white shadow-lg">
@@ -61,7 +70,7 @@ const Navbar = () => {
                       Wallet
                     </Link>
                     <div className="bg-green-600 px-4 py-2 rounded-lg font-semibold">
-                      💰 {formatCurrency(getCashBalance(), currency)}
+                      💰 {formattedBalance}
                     </div>
                     <Link
                       to="/profile"

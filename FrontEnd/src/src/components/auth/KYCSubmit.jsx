@@ -68,6 +68,7 @@ const KYCSubmit = () => {
             name="document_number"
             value={formData.document_number}
             onChange={handleChange}
+            maxlength={formData.document_type === "aadhar" ? 12 : 10}
             required
             placeholder={
               formData.document_type === "aadhar"

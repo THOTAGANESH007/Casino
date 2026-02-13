@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI } from "../../api/auth";
-import { adminAPI } from "../../api/admin"; // Or ownerAPI depending on your access control
+import { adminAPI } from "../../api/admin";
 import { useAuth } from "../../hooks/useAuth";
 import ErrorMessage from "../common/ErrorMessage";
 import Loading from "../common/Loading";
@@ -20,7 +20,7 @@ const RegionSelect = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  
+
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
 
@@ -31,11 +31,9 @@ const RegionSelect = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch both Regions and Tenants to link names correctly
-      // Note: Ensure your API allows a user without a tenant_id to fetch this list
       const [regionsData, tenantsData] = await Promise.all([
         adminAPI.getRegions(),
-        adminAPI.getTenants(), 
+        adminAPI.getTenants(),
       ]);
 
       setAllRegions(regionsData);
@@ -62,7 +60,7 @@ const RegionSelect = () => {
 
   // 2. Filter Tenants based on the selected Region Name
   const availableTenantsForRegion = allRegions.filter(
-    (r) => r.region_name === selectedRegionName
+    (r) => r.region_name === selectedRegionName,
   );
 
   const handleSubmit = async (e) => {
@@ -131,7 +129,13 @@ const RegionSelect = () => {
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                <svg
+                  className="fill-current h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
               </div>
             </div>
           </div>
@@ -152,14 +156,21 @@ const RegionSelect = () => {
                   <option value="">-- Select Casino --</option>
                   {availableTenantsForRegion.map((region) => (
                     <option key={region.region_id} value={region.region_id}>
-                      {tenantsMap[region.tenant_id] || `Casino ID: ${region.tenant_id}`}
+                      {tenantsMap[region.tenant_id] ||
+                        `Casino ID: ${region.tenant_id}`}
                       {/* Optional: Show tax rate if relevant */}
                       {region.tax_rate > 0 ? ` (Tax: ${region.tax_rate}%)` : ""}
                     </option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  <svg
+                    className="fill-current h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">

@@ -1,15 +1,31 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from ..models.user import UserType, DocType
 from decimal import Decimal
+import re
 class UserSignup(BaseModel):
     first_name: str
     last_name: Optional[str] = None
     email: EmailStr
     phone: Optional[str] = None
-    password: str = Field(min_length=8,regex="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$", description="Password must be at least 8 characters and include a letter, number, and special character")
+    password: str
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters")
 
+        if not re.search(r"[A-Za-z]", value):
+            raise ValueError("Password must contain a letter")
+
+        if not re.search(r"\d", value):
+            raise ValueError("Password must contain a number")
+
+        if not re.search(r"[@$!%*?&.]", value):
+            raise ValueError("Password must contain a special character")
+
+        return value
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -81,8 +97,23 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str
     otp: str
-    new_password: str = Field(min_length=8,regex="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$", description="Password must be at least 8 characters and include a letter, number, and special character")
+    new_password: str
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters")
 
+        if not re.search(r"[A-Za-z]", value):
+            raise ValueError("Password must contain a letter")
+
+        if not re.search(r"\d", value):
+            raise ValueError("Password must contain a number")
+
+        if not re.search(r"[@$!%*?&.]", value):
+            raise ValueError("Password must contain a special character")
+
+        return value
 class LimitSet(BaseModel):
     daily_loss_limit: Optional[Decimal] = Field(None, ge=0)
     daily_bet_limit: Optional[Decimal] = Field(None, ge=0)

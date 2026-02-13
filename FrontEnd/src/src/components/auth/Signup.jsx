@@ -33,7 +33,7 @@ const Signup = () => {
     }
 
     const passwordRegex =
-      "^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$";
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
 
     if (!passwordRegex.test(formData.password)) {
       setError(
@@ -101,7 +101,8 @@ const Signup = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            maxlength={10}
+            maxLength={10}
+            minLength={10}
             placeholder="1234567890"
           />
 
@@ -110,7 +111,7 @@ const Signup = () => {
             type="password"
             name="password"
             value={formData.password}
-            minlength={8}
+            minLength={8}
             onChange={handleChange}
             required
             placeholder="Minimum 8 characters"
@@ -121,7 +122,7 @@ const Signup = () => {
             type="password"
             name="confirmPassword"
             value={formData.confirmPassword}
-            minlength={8}
+            minLength={8}
             onChange={handleChange}
             required
             placeholder="Re-enter password"

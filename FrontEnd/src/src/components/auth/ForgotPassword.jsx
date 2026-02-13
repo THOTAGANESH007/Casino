@@ -50,7 +50,7 @@ const ForgotPassword = () => {
     }
 
     const passwordRegex =
-      "^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$";
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
 
     if (!passwordRegex.test(formData.password)) {
       setError(
@@ -137,7 +137,7 @@ const ForgotPassword = () => {
               onChange={(e) =>
                 setFormData({ ...formData, newPassword: e.target.value })
               }
-              minlength={8}
+              minLength={8}
               required
               placeholder="******"
             />
@@ -145,7 +145,7 @@ const ForgotPassword = () => {
               label="Confirm Password"
               type="password"
               value={formData.confirmPassword}
-              minlength={8}
+              minLength={8}
               onChange={(e) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }

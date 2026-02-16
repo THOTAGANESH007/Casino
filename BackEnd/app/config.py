@@ -26,15 +26,26 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str
     FRONTEND_URL: str = "http://localhost:5173"
     
-    # Fantasy Cricket
-    FANTASY_CRICKET_URI: str
-    FANTASY_CRICKET_API: str
-    
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000,https://casino-online-gaming.vercel.app"
     
     # Application
     ENVIRONMENT: str = "development"
+
+    # Redis Configuration
+    REDIS_URL: str
+
+    # Celery Configuration
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+
+    # Cricket API Configuration
+    CRICKET_API_KEY:str
+    CRICKET_API_BASE_URL: str
+    RAPID_API_KEY: str
+
+    # Background Task Settings
+    SCORE_UPDATE_INTERVAL:int
     
     @property
     def cors_origins_list(self) -> List[str]:

@@ -38,6 +38,7 @@ class User(Base):
     wallets = relationship("Wallet", back_populates="user")
     game_sessions = relationship("GameSession", back_populates="user")
     limits = relationship("ResponsibleLimit", back_populates="user", uselist=False)
+    fantasy_teams = relationship("FantasyTeam", back_populates="user")
 
 
 class UserKYC(Base):

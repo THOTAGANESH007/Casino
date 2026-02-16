@@ -32,6 +32,10 @@ import ResponsibleGaming from "./src/components/user/ResponsibleGaming.jsx";
 import { useAuth } from "./src/hooks/useAuth.js";
 import AdminProfile from "./src/components/user/AdminProfile.jsx";
 import OwnerProfile from "./src/components/user/OwnerProfile.jsx";
+import RealMatches from "./src/components/games/RealMatches.jsx";
+import RealTeamBuilder from "./src/components/games/RealTeamBuilder.jsx";
+import MyTeamsPage from "./src/components/pages/MyTeamsPage.jsx";
+import LeaderboardPage from "./src/components/pages/LeaderboardPage.jsx";
 
 const RoleBasedRedirect = () => {
   const { isAuthenticated, isAdmin, isCasinoOwner } = useAuth();
@@ -223,7 +227,38 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-
+              <Route
+                path="/games/real-fantasy"
+                element={
+                  <ProtectedRoute>
+                    <RealMatches />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/games/real-fantasy/create/:matchId"
+                element={
+                  <ProtectedRoute>
+                    <RealTeamBuilder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-teams"
+                element={
+                  <ProtectedRoute>
+                    <MyTeamsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard/:matchId"
+                element={
+                  <ProtectedRoute>
+                    <LeaderboardPage />
+                  </ProtectedRoute>
+                }
+              />
               {/* 404 - Redirect to games */}
               <Route path="*" element={<Navigate to="/games" replace />} />
             </Routes>

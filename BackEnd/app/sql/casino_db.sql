@@ -266,3 +266,128 @@ user_team_id INTEGER NOT NULL REFERENCES fantasy_user_teams(id) ON DELETE CASCAD
 player_id INTEGER NOT NULL REFERENCES fantasy_players(id) ON DELETE CASCADE,
 PRIMARY KEY (user_team_id, player_id)
 );
+
+
+CREATE TYPE match_statuses AS ENUM ('UPCOMING','LIVE','COMPLETED','CANCELLED');
+CREATE TYPE match_type AS ENUM ('TEST','ODI','T20','T10');
+CREATE TYPE player_roles AS ENUM ('BATSMAN','BOWLER','ALL_ROUNDER','WICKET_KEEPER');
+CREATE TYPE team_status AS ENUM ('DRAFT','SUBMITTED','LOCKED');
+
+CREATE TABLE matches(
+match_id SERIAL PRIMARY KEY,
+external_match_id VARCHAR(100) UNIQUE NOT NULL,
+match_name VARCHAR(200) NOT NULL,
+match_type match_type NOT NULL,
+venue VARCHAR(200),
+match_date TIMESTAMPTZ NOT NULL,
+team_a VARCHAR(100) NOT NULL,
+team_b VARCHAR(100) NOT NULL,
+status match_statuses NOT NULL DEFAULT 'UPCOMING',
+entry_fee NUMERIC(10,2) DEFAULT 10.00,
+max_budget NUMERIC(10,1) DEFAULT 100.0,
+prize_pool NUMERIC(10,2) DEFAULT 0.00,
+is_active BOOLEAN DEFAULT FALSE,
+teams_locked BOOLEAN DEFAULT FALSE,
+series_name VARCHAR(200),
+match_number VARCHAR(50),
+current_score JSON,
+match_data JSON,
+created_at TIMESTAMPTZ DEFAULT NOW(),
+updated_at TIMESTAMPTZ
+);
+
+CREATE TABLE players(
+player_id SERIAL PRIMARY KEY,
+match_id INTEGER REFERENCES matches(match_id),
+external_player_id VARCHAR(100) NOT NULL,
+name VARCHAR(100) NOT NULL,
+role player_roles NOT NULL,
+team VARCHAR(100) NOT NULL,
+credits NUMERIC(4,1) NOT NULL,
+image_url VARCHAR(255),
+meta_data JSON,
+created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE player_performances (
+    performance_id SERIAL PRIMARY KEY,
+    match_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    runs INTEGER DEFAULT 0,
+    balls_faced INTEGER DEFAULT 0,
+    fours INTEGER DEFAULT 0,
+    sixes INTEGER DEFAULT 0,
+    strike_rate NUMERIC(6,2) DEFAULT 0,
+    wickets INTEGER DEFAULT 0,
+    overs NUMERIC(4,1) DEFAULT 0,
+    runs_conceded INTEGER DEFAULT 0,
+    maidens INTEGER DEFAULT 0,
+    economy NUMERIC(5,2) DEFAULT 0,
+    catches INTEGER DEFAULT 0,
+    stumpings INTEGER DEFAULT 0,
+    run_outs INTEGER DEFAULT 0,
+    fantasy_points NUMERIC(8,2) DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    FOREIGN KEY(match_id) REFERENCES matches(match_id) ON DELETE CASCADE,
+    FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
+
+
+CREATE TABLE scoring_rules (
+    rule_id SERIAL PRIMARY KEY,
+    match_id INTEGER UNIQUE NOT NULL,
+    run_points NUMERIC(5,2) DEFAULT 1.0,
+    four_points NUMERIC(5,2) DEFAULT 1.0,
+    six_points NUMERIC(5,2) DEFAULT 2.0,
+    thirty_run_bonus NUMERIC(5,2) DEFAULT 4.0,
+    half_century_bonus NUMERIC(5,2) DEFAULT 8.0,
+    century_bonus NUMERIC(5,2) DEFAULT 16.0,
+    duck_penalty NUMERIC(5,2) DEFAULT -2.0,
+    wicket_points NUMERIC(5,2) DEFAULT 25.0,
+    maiden_over_points NUMERIC(5,2) DEFAULT 12.0,
+    three_wicket_bonus NUMERIC(5,2) DEFAULT 4.0,
+    four_wicket_bonus NUMERIC(5,2) DEFAULT 8.0,
+    five_wicket_bonus NUMERIC(5,2) DEFAULT 16.0,
+    catch_points NUMERIC(5,2) DEFAULT 8.0,
+    stumping_points NUMERIC(5,2) DEFAULT 12.0,
+    run_out_direct_points NUMERIC(5,2) DEFAULT 12.0,
+    run_out_indirect_points NUMERIC(5,2) DEFAULT 6.0,
+    economy_below_5_bonus NUMERIC(5,2) DEFAULT 6.0,
+    economy_below_6_bonus NUMERIC(5,2) DEFAULT 4.0,
+    economy_above_10_penalty NUMERIC(5,2) DEFAULT -4.0,
+    strike_rate_above_150_bonus NUMERIC(5,2) DEFAULT 6.0,
+    strike_rate_above_130_bonus NUMERIC(5,2) DEFAULT 4.0,
+    strike_rate_below_70_penalty NUMERIC(5,2) DEFAULT -4.0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    FOREIGN KEY(match_id) REFERENCES matches(match_id) ON DELETE CASCADE
+);
+
+CREATE TABLE fantasy_teams (
+    team_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    match_id INTEGER NOT NULL,
+    team_name VARCHAR(100) NOT NULL,
+    status team_status NOT NULL DEFAULT 'DRAFT',
+    captain_id INTEGER NOT NULL,
+    vice_captain_id INTEGER NOT NULL,
+    total_credits NUMERIC(5,1) NOT NULL,
+    total_points NUMERIC(10,2) DEFAULT 0,
+    rank INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    FOREIGN KEY(match_id) REFERENCES matches(match_id) ON DELETE CASCADE,
+    FOREIGN KEY(captain_id) REFERENCES players(player_id),
+    FOREIGN KEY(vice_captain_id) REFERENCES players(player_id)
+);
+
+CREATE TABLE team_players (
+    id SERIAL PRIMARY KEY,
+    team_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    is_captain BOOLEAN DEFAULT FALSE,
+    is_vice_captain BOOLEAN DEFAULT FALSE,
+    points NUMERIC(8,2) DEFAULT 0,
+    FOREIGN KEY(team_id) REFERENCES fantasy_teams(team_id) ON DELETE CASCADE,
+    FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE,
+    UNIQUE(team_id, player_id)
+);

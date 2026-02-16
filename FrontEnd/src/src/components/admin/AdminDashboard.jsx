@@ -4,6 +4,7 @@ import UserManagement from "./UserManagement";
 import GameMarketplace from "./GameMarketplace";
 import FantasyMatchManager from "./FantasyMatchManager";
 import AdminProfile from "../user/AdminProfile";
+import RealFantasyAdmin from "./RealFantasyAdmin";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("stats");
@@ -23,6 +24,12 @@ const AdminDashboard = () => {
       label: "Fantasy Cricket",
       icon: "🏏",
       component: FantasyMatchManager,
+    },
+    {
+      id: "real-fantasy",
+      label: "Real Fantasy (Auto)",
+      icon: "🏏",
+      component: RealFantasyAdmin,
     },
   ];
 

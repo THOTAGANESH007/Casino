@@ -22,7 +22,6 @@ const GamesList = () => {
     fetchGames();
   }, []);
 
-  // Helper to map backend game names to frontend routes/visuals
   const getGameMeta = (gameName) => {
     const meta = {
       Blackjack: {
@@ -59,6 +58,11 @@ const GamesList = () => {
         route: "/games/fantasy-cricket",
         icon: "🏏",
         color: "from-indigo-500 to-purple-600",
+      },
+      "Real Fantasy Cricket": {
+        route: "/games/real-fantasy",
+        icon: "🌍",
+        color: "from-blue-600 to-cyan-700",
       },
     };
     return (

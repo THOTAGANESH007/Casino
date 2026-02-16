@@ -4,7 +4,7 @@ from .config import settings
 from .database import engine, Base
 
 # Import routers
-from .routers import auth, admin, wallet, user, lobby, responsible_gaming,stats, jackpot
+from .routers import auth, admin, wallet, user, lobby, responsible_gaming,stats, jackpot, teams, leaderboard
 from .routers.games import (
     blackjack,
     roulette,
@@ -12,7 +12,8 @@ from .routers.games import (
     mines,
     slots,
     crash,
-    fantasy_cricket
+    fantasy_cricket,
+    real_fantasy
 )
 
 app = FastAPI(
@@ -54,6 +55,9 @@ app.include_router(lobby.router)
 app.include_router(responsible_gaming.router)
 app.include_router(stats.router)
 app.include_router(jackpot.router)
+app.include_router(teams.router)
+app.include_router(leaderboard.router)
+app.include_router(real_fantasy.router)
 
 @app.get("/")
 async def root():
@@ -128,6 +132,12 @@ async def list_games():
                 "endpoint": "/games/fantasy-cricket",
                 "description": "Build teams and compete for prizes with delayed settlement",
                 "rtp": "95.0%"
+            },
+            {
+                "name": "Real Fantasy Cricket",
+                "endpoint": "/games/real-fantasy-cricket",
+                "description": "Fetches real cricket data for fantasy play ",
+                "rtp": "93.0%"
             }
         ]
     }

@@ -2,17 +2,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timezone
-
-from app.utils.security import get_password_hash
+from ..models.player import PlayerRoles
+from ..services.rapid_api import RapidAPICricketService
+from ..services.cricket_api import CricketAPIService
+from ..utils.security import get_password_hash
 from ..database import get_db
 from ..models.user import User, UserKYC, UserType
 from ..models.tenant import Tenant, TenantRegion
 from ..schemas.tenant import RegionUpdate, TenantCreate, TenantResponse, RegionCreate, RegionResponse
-from ..schemas.user import TenantAdminCreate, UserResponse, UserSignup
+from ..schemas.user import TenantAdminCreate, UserResponse
 from ..utils.dependencies import require_casino_owner, require_tenant_admin
 from ..services.email_service import email_service
 from ..models.game import Game, GameProvider, ProviderGame, TenantGame
 from ..schemas.game import GameProviderCreate, GameProviderResponse, MarketplaceItemResponse, ProviderGameCreate, TenantGameToggle
+from ..models.match import Match, MatchStatuses, MatchType
+from ..models.player import Player
+from ..models.points import ScoringRule
+from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -583,3 +592,206 @@ async def get_catalog(
             "is_active": item.provider.is_active # inherited from provider
         })
     return result
+
+def match_status(started, ended):
+    if started == False and ended == False:
+        return MatchStatuses.UPCOMING
+    elif started == True and ended == False:
+        return MatchStatuses.LIVE
+    else:
+        return MatchStatuses.COMPLETED
+@router.post("/matches/fetch-upcoming")
+def fetch_upcoming_matches(db: Session = Depends(get_db)):
+    """
+    Fetch matches from CricAPI and save to DB.
+    Mappings are specific to CricAPI JSON response.
+    """
+    try:
+        # 1. Get raw data from Service
+        upcoming_matches_data = CricketAPIService.get_upcoming_matches()
+        created_count = 0
+
+        for match_data in upcoming_matches_data:
+            # CricAPI uses 'id' string
+            external_id = str(match_data.get("id"))
+
+            # Check if exists
+            existing = db.query(Match).filter(
+                Match.external_match_id == external_id
+            ).first()
+
+            if existing:
+                continue
+
+            # 2. Extract Data Safely
+            # Date: CricAPI sends "dateTimeGMT" or "date"
+            match_date_str = match_data.get("dateTimeGMT") or match_data.get("date")
+            
+            if not match_date_str:
+                logger.warning(f"Skipping match {external_id}: No date found")
+                continue
+
+            # Match Type
+            m_type = match_data.get("matchType", "").upper()
+            if "TEST" in m_type: match_type = MatchType.TEST
+            elif "ODI" in m_type: match_type = MatchType.ODI
+            elif "T10" in m_type: match_type = MatchType.T10
+            else: match_type = MatchType.T20
+
+            # Teams: CricAPI sends 'teamInfo': [{'name': 'Ind'}, {'name': 'Aus'}]
+            teams_info = match_data.get("teamInfo", [])
+            team_a = teams_info[0].get("name") if len(teams_info) > 0 else "Team A"
+            team_b = teams_info[1].get("name") if len(teams_info) > 1 else "Team B"
+
+            # 3. Create Record
+            match = Match(
+                external_match_id=external_id,
+                match_name=match_data.get("name", f"{team_a} vs {team_b}"),
+                match_type=match_type,
+                venue=match_data.get("venue", "Unknown Venue"),
+                match_date=match_date_str,
+                team_a=team_a,
+                team_b=team_b,
+                status=match_status(match_data.get("matchStarted"), match_data.get("matchEnded")),
+                series_name=match_data.get("series_id", ""),
+                is_active=False,
+                # Default Money Settings
+                entry_fee=Decimal("10.00"),
+                max_budget=Decimal("100.0"),
+                prize_pool=Decimal("0.00")
+            )
+
+            db.add(match)
+            created_count += 1
+
+        db.commit()
+
+        return {
+            "message": f"Fetched {len(upcoming_matches_data)} matches, created {created_count}",
+            "created": created_count
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching matches: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/matches")
+def list_all_matches(status_filter: MatchStatuses = None, db: Session = Depends(get_db)):
+    query = db.query(Match)
+    if status_filter:
+        query = query.filter(Match.status == status_filter)
+    return query.order_by(Match.match_date.desc()).all()
+
+@router.post("/matches/{match_id}/activate")
+def activate_match(match_id: int, db: Session = Depends(get_db)):
+    """Activate match and fetch squads via CricAPI"""
+    match = db.query(Match).filter(Match.match_id == match_id).first()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    if match.is_active:
+        raise HTTPException(status_code=400, detail="Match already activated")
+    
+    # 1. Fetch Squads
+    # Your service returns: { "teamA": { "squad": [...] }, "teamB": { "squad": [...] } }
+    match_info = CricketAPIService.get_match_squads(match.external_match_id)
+    
+    if not match_info:
+        raise HTTPException(
+            status_code=500, 
+            detail="Squads not found in API. CricAPI might not have released them yet."
+        )
+
+    players_created = 0
+    
+    # 2. Parse Team A
+    team_a_data = match_info.get("teamA", {})
+    for p_data in team_a_data.get("squad", []):
+        create_player(db, match.match_id, p_data, match.team_a)
+        players_created += 1
+
+    # 3. Parse Team B
+    team_b_data = match_info.get("teamB", {})
+    for p_data in team_b_data.get("squad", []):
+        create_player(db, match.match_id, p_data, match.team_b)
+        players_created += 1
+    
+    # Create rules & activate
+    create_default_scoring_rules(db, match.match_id)
+    match.is_active = True
+    db.commit()
+    
+    return {
+        "message": f"Match activated with {players_created} players",
+        "match_id": match_id
+    }
+
+def create_player(db: Session, match_id: int, player_data: dict, team_name: str):
+    """Map CricAPI player to DB"""
+    external_id = str(player_data.get("id"))
+    
+    existing = db.query(Player).filter(
+        Player.match_id == match_id,
+        Player.external_player_id == external_id
+    ).first()
+    
+    if existing: return existing
+    
+    # Role Logic
+    raw_role = player_data.get("role")
+    role_str = raw_role.lower() if raw_role else ""
+    if "bat" in role_str: role = PlayerRoles.BATSMAN
+    elif "bowl" in role_str: role = PlayerRoles.BOWLER
+    elif "all" in role_str: role = PlayerRoles.ALL_ROUNDER
+    elif "keep" in role_str or "wk" in role_str: role = PlayerRoles.WICKET_KEEPER
+    else: role = PlayerRoles.BATSMAN
+    
+    # Credits Logic
+    credits = 9.0
+    if role == PlayerRoles.ALL_ROUNDER: credits = 9.5
+    if role == PlayerRoles.BOWLER: credits = 8.5
+
+    player = Player(
+        match_id=match_id,
+        external_player_id=external_id,
+        name=player_data.get("name"),
+        role=role,
+        team=team_name,
+        credits=Decimal(str(credits)),
+        image_url=player_data.get("image"),
+        meta_data=player_data
+    )
+    db.add(player)
+    return player
+
+def create_default_scoring_rules(db: Session, match_id: int):
+    if not db.query(ScoringRule).filter(ScoringRule.match_id == match_id).first():
+        db.add(ScoringRule(match_id=match_id))
+        db.commit()
+
+@router.post("/matches/{match_id}/lock")
+def lock_team_creation(match_id: int, db: Session = Depends(get_db)):
+    match = db.query(Match).filter(Match.match_id == match_id).first()
+    if not match: raise HTTPException(status_code=404, detail="Match not found")
+    match.teams_locked = True
+    db.commit()
+    return {"message": "Team creation locked"}
+
+@router.post("/matches/{match_id}/start")
+def start_match(match_id: int, db: Session = Depends(get_db)):
+    match = db.query(Match).filter(Match.match_id == match_id).first()
+    if not match: raise HTTPException(status_code=404, detail="Match not found")
+    match.status = MatchStatuses.LIVE
+    db.commit()
+    return {"message": "Match started"}
+
+@router.put("/matches/{match_id}/scoring-rules")
+def update_scoring_rules(match_id: int, rules_data: dict, db: Session = Depends(get_db)):
+    rules = db.query(ScoringRule).filter(ScoringRule.match_id == match_id).first()
+    if not rules: raise HTTPException(status_code=404, detail="Rules not found")
+    for field, value in rules_data.items():
+        if hasattr(rules, field):
+            setattr(rules, field, Decimal(str(value)))
+    db.commit()
+    return rules

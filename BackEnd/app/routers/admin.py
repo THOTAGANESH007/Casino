@@ -501,7 +501,7 @@ async def add_game_to_provider(
 # Helper to ensure base games exist (Run once or via script)
 @router.post("/games/init")
 async def init_base_games(db: Session = Depends(get_db), owner: User = Depends(require_casino_owner)):
-    base_games = ["Blackjack", "Roulette", "Slots", "Mines", "Crash", "Dice", "Fantasy Cricket"]
+    base_games = ["Blackjack", "Roulette", "Slots", "Mines", "Crash", "Dice", "Fantasy Cricket", "Real Fantasy Cricket"]
     created = []
     for name in base_games:
         if not db.query(Game).filter(Game.game_name == name).first():

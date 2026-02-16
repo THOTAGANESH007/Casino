@@ -29,9 +29,9 @@ celery_app.conf.beat_schedule = {
         'task': 'app.workers.match_scraper.fetch_upcoming_matches_task',
         'schedule': crontab(minute=0, hour='*/6'),
     },
-    # Update live match scores every minute
+    # Update live match scores every 15 minutes
     'update-live-scores': {
         'task': 'app.workers.score_updater.update_live_scores_task',
-        'schedule': 60.0,  # Every 60 seconds
+        'schedule': 900.0,
     },
 }

@@ -8,6 +8,10 @@ from sqlalchemy.orm import Session
 from ..database import SessionLocal
 from ..models.points import ScoringRule
 import logging
+from ..redis_client import CacheManager
+from ..websocket.manager import ConnectionManager
+from ..models.player import Player
+from ..models.team import FantasyTeam, TeamStatus
 
 logger = logging.getLogger(__name__)
 
@@ -57,24 +61,39 @@ def update_match_scores(db: Session, match: Match):
     """
     Update scores for a single match
     """
-    # Fetch latest scores from API
-    player_stats = CricketAPIService.get_player_stats(match.external_match_id)
     
+    external_id = match.external_match_id
+    # Unique key for this match's raw stats
+    cache_key = f"raw_stats:{external_id}"
+
+    # CHECK CACHE FIRST
+    player_stats = CacheManager.get(cache_key)
+
+    # Fetch latest scores from API
     if not player_stats:
-        logger.warning(f"No player stats for match {match.match_id}")
-        return
+        player_stats = CricketAPIService.get_player_stats(match.external_match_id)
+    
+        if not player_stats:
+            logger.warning(f"No player stats for match {match.match_id}")
+            return
+        
+        CacheManager.set(cache_key, player_stats, ttl=1200)
     
     updated_count = 0
     
+    # Fetch all players for this match at once to avoid N+1 queries
+    db_players = db.query(Player).filter(Player.match_id == match.match_id).all()
+    player_map = {p.external_player_id: p for p in db_players}
+
+    # Fetch scoring rules
+    rules = db.query(ScoringRule).filter(ScoringRule.match_id == match.match_id).first()
+    if not rules:
+        logger.error(f"No scoring rules found for match {match.match_id}. Cannot calculate points.")
+        return
+    
     # Update each player's performance
     for external_player_id, stats in player_stats.items():
-        # Find player in our database
-        from app.models.player import Player
-        
-        player = db.query(Player).filter(
-            Player.match_id == match.match_id,
-            Player.external_player_id == external_player_id
-        ).first()
+        player = player_map.get(str(external_player_id))
         
         if not player:
             logger.warning(f"Player {external_player_id} not found in DB")
@@ -110,15 +129,10 @@ def update_match_scores(db: Session, match: Match):
         performance.stumpings = stats.get('stumpings', 0)
         performance.run_outs = stats.get('run_outs', 0)
         
-        # Calculate fantasy points
-        rules = db.query(ScoringRule).filter(
-            ScoringRule.match_id == match.match_id
-        ).first()
-        
-        if rules:
-            performance.fantasy_points = PointsCalculator.calculate_player_points(
-                performance, rules
-            )
+        # Calculate fantasy points immediately
+        performance.fantasy_points = PointsCalculator.calculate_player_points(
+            performance, rules
+        )
         
         updated_count += 1
     
@@ -129,8 +143,15 @@ def update_match_scores(db: Session, match: Match):
     # Recalculate all team points
     PointsCalculator.recalculate_all_teams(db, match.match_id)
     
+    update_payload = {
+        "type": "score_update",
+        "match_id": match.match_id,
+        "message": "Scores have been updated!"
+    }
+    
+    CacheManager.publish_match_update(match.match_id, update_payload)
+    
     # Trigger WebSocket broadcast for leaderboard update
-    from app.websocket.manager import ConnectionManager
     manager = ConnectionManager()
     
     # This will be picked up by the WebSocket endpoint
@@ -140,7 +161,7 @@ def update_match_scores(db: Session, match: Match):
     }
 
 
-@celery_app.task(name='app.workers.score_updater.finalize_match_task')
+@celery_app.task(name='..workers.score_updater.finalize_match_task')
 def finalize_match_task(match_id: int):
     """
     Finalize match - calculate final standings
@@ -158,7 +179,6 @@ def finalize_match_task(match_id: int):
         update_match_scores(db, match)
         
         # Lock all teams
-        from app.models.team import FantasyTeam, TeamStatus
         teams = db.query(FantasyTeam).filter(
             FantasyTeam.match_id == match_id
         ).all()

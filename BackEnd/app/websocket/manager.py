@@ -1,7 +1,9 @@
+import asyncio
 from fastapi import WebSocket
 from typing import Dict, List
 import json
 import logging
+from ..redis_client import redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,9 @@ class ConnectionManager:
         
         if match_id not in self.active_connections:
             self.active_connections[match_id] = []
-        
+        # Start a background task to listen to Redis for THIS specific match
+            # only if we aren't already listening.
+        asyncio.create_task(self.redis_listener(match_id))
         self.active_connections[match_id].append(websocket)
         logger.info(f"WebSocket connected to match {match_id}. Total: {len(self.active_connections[match_id])}")
     
@@ -37,8 +41,46 @@ class ConnectionManager:
                 logger.info(f"WebSocket disconnected from match {match_id}")
             
             # Clean up empty lists
-            if len(self.active_connections[match_id]) == 0:
+            if not self.active_connections[match_id]:
                 del self.active_connections[match_id]
+    
+    async def redis_listener(self, match_id: int):
+        """
+        A background task that runs for each match.
+        It listens to Redis and forwards messages to local WebSockets.
+        """
+        pubsub = redis_client.pubsub()
+        channel = f"match_channel_{match_id}"
+        await pubsub.subscribe(channel)
+        
+        logger.info(f"Redis Listener started for channel: {channel}")
+
+        try:
+            while match_id in self.active_connections:
+                # Check for messages every 0.1 seconds
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                if message:
+                    data = json.loads(message['data'])
+                    # Forward to all local sockets for this match
+                    await self.broadcast_locally(match_id, data)
+                
+                await asyncio.sleep(0.1) 
+        except Exception as e:
+            logger.error(f"Redis Listener Error for match {match_id}: {e}")
+        finally:
+            await pubsub.unsubscribe(channel)
+
+    async def broadcast_locally(self, match_id: int, message: dict):
+        """Send message to sockets held in THIS process only"""
+        if match_id not in self.active_connections:
+            return
+        
+        for connection in self.active_connections[match_id]:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                # Connection likely dead, will be cleaned up by disconnect logic
+                pass
     
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         """Send message to specific client"""

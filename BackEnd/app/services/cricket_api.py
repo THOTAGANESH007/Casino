@@ -20,7 +20,7 @@ class CricketAPIService:
     BASE_URL = settings.CRICKET_API_BASE_URL
     API_KEY = settings.CRICKET_API_KEY
     CACHE_KEY = "current_matches"
-    CACHE_TTL = 30  # seconds
+    CACHE_TTL = 900  # 15 minutes
 
 
     @classmethod

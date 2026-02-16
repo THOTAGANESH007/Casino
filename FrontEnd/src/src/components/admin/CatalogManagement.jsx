@@ -87,11 +87,11 @@ const CatalogManagement = () => {
           </p>
         </div>
         <div className="space-x-3">
-          {baseGames.length === 0 && (
+          {/* {baseGames.length === 0 && ( */}
             <Button onClick={handleInitGames} variant="warning" size="sm">
               Initialize Base Games
             </Button>
-          )}
+          {/* )} */}
           <Button onClick={() => setShowForm(!showForm)} variant="primary">
             {showForm ? "Cancel" : "+ Add to Catalog"}
           </Button>

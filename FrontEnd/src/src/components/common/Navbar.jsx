@@ -70,13 +70,13 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/games"
-                      className="px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
+                      className="px-4 py-2 rounded-lg bg-pink-500 transition-colors"
                     >
                       Games
                     </Link>
                     <Link
                       to="/wallet"
-                      className="px-4 py-2 rounded-lg bg-pink-300 transition-colors"
+                      className="px-4 py-2 rounded-lg bg-pink-500 transition-colors"
                     >
                       Wallet
                     </Link>
@@ -98,7 +98,7 @@ const Navbar = () => {
                   </>
                 )}
 
-                <div className="flex items-center space-x-2 px-4 py-2 bg-pink-300 rounded-lg">
+                <div className="flex items-center space-x-2 px-4 py-2 bg-pink-500 rounded-lg">
                   <span className="text-2xl">👤</span>
                   <span>{user?.first_name}</span>
                 </div>

@@ -9,7 +9,7 @@ const JackpotTicker = () => {
 
   useEffect(() => {
     fetchJackpots();
-    const interval = setInterval(fetchJackpots, 5000); // Update every 5s
+    const interval = setInterval(fetchJackpots, 60000); // Update every 1hr
     return () => clearInterval(interval);
   }, []);
 
@@ -38,7 +38,7 @@ const JackpotTicker = () => {
         {/* Pots */}
         <div className="flex gap-6 md:gap-12">
           {jackpots.map((jp) => (
-            <div key={jp.id} className="text-center">
+            <div key={jp.jackpot_id} className="text-center">
               <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">
                 {jp.name}
               </h3>

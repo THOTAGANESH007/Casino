@@ -20,6 +20,7 @@ from ..models.player import Player
 from ..models.points import ScoringRule
 from decimal import Decimal
 import logging
+from ..services.kyc_service import KYCService
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +206,15 @@ async def get_pending_kyc(
         })
     
     return result
+@router.post("/kyc/{kyc_id}/parse")
+async def admin_parse_kyc(kyc_id: int, db: Session = Depends(get_db)):
+    kyc = db.query(UserKYC).filter(UserKYC.kyc_id == kyc_id).first()
+    extracted_no = KYCService.parse_document(kyc.document_url, kyc.document_type)
+    
+    kyc.parsed_number = extracted_no
+    db.commit()
+    db.refresh(kyc)
+    return {"extracted_number": extracted_no}
 
 @router.post("/kyc/{kyc_id}/approve")
 async def approve_kyc(

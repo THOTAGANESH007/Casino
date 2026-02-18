@@ -46,6 +46,11 @@ class Settings(BaseSettings):
 
     # Background Task Settings
     SCORE_UPDATE_INTERVAL:int
+
+    # Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET_KEY: str
     
     @property
     def cors_origins_list(self) -> List[str]:

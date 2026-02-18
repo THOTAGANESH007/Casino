@@ -48,6 +48,8 @@ class UserKYC(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), unique=True)
     document_type = Column(Enum(DocType, name="doc_type", create_type=False, native_enum=True))
     document_number = Column(String)
+    document_url = Column(String)    # Cloudinary URL
+    parsed_number = Column(String, nullable=True) # Number extracted by OCR
     verified_status = Column(Boolean, default=False)
     verified_at = Column(TIMESTAMP(timezone=True))
     

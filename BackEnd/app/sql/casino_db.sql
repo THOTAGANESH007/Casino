@@ -85,6 +85,8 @@ kyc_id SERIAL PRIMARY KEY,
 user_id INT REFERENCES users(user_id),
 document_type doc_type NOT NULL,
 document_number VARCHAR(16) NOT NULL,
+document_url TEXT,
+parsed_number TEXT,
 verified_status BOOLEAN DEFAULT false,
 verified_at TIMESTAMPTZ
 );

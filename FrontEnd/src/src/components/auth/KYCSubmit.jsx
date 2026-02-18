@@ -14,6 +14,7 @@ const KYCSubmit = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [file, setFile] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,6 +33,16 @@ const KYCSubmit = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile && selectedFile.type !== "application/pdf") {
+      alert("Please upload a PDF file only.");
+      e.target.value = null;
+      return;
+    }
+    setFile(selectedFile);
   };
 
   return (
@@ -75,6 +86,16 @@ const KYCSubmit = () => {
                 ? "1234-5678-9012"
                 : "ABCDE1234F"
             }
+          />
+
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Upload Document (PDF Only)
+          </label>
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            required
           />
 
           <Button

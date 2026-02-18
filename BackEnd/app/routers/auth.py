@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from ..database import get_db
@@ -15,6 +15,7 @@ from ..services.email_service import email_service
 import random
 import string
 from ..schemas.user import ForgotPasswordRequest, ResetPasswordRequest
+from ..services.kyc_service import KYCService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -91,7 +92,9 @@ async def select_region(
 
 @router.post("/submit-kyc")
 async def submit_kyc(
-    kyc_data: KYCSubmit,
+    document_type: str = Form(...),
+    document_number: str = Form(...),
+    file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -102,7 +105,13 @@ async def submit_kyc(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please select a region first"
         )
-    
+    # 1. Check File Type
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    # 2. Upload to Cloudinary
+    file_bytes = await file.read()
+    url = KYCService.upload_document(file_bytes, current_user.user_id)
     # Check if KYC already exists
     existing_kyc = db.query(UserKYC).filter(
         UserKYC.user_id == current_user.user_id
@@ -110,16 +119,18 @@ async def submit_kyc(
     
     if existing_kyc:
         # Update existing KYC
-        existing_kyc.document_type = kyc_data.document_type
-        existing_kyc.document_number = kyc_data.document_number
+        existing_kyc.document_type = document_type
+        existing_kyc.document_number = document_number
+        existing_kyc.document_url = url
         existing_kyc.verified_status = False
         existing_kyc.verified_at = None
     else:
         # Create new KYC
         new_kyc = UserKYC(
             user_id=current_user.user_id,
-            document_type=kyc_data.document_type,
-            document_number=kyc_data.document_number,
+            document_type=document_type,
+            document_number=document_number,
+            document_url=url,
             verified_status=False
         )
         db.add(new_kyc)

@@ -80,6 +80,11 @@ export const adminAPI = {
     return response.data;
   },
 
+  parseKYC: async (kycId) => {
+    const response = await api.post(`/admin/kyc/${kycId}/parse`, {});
+    return response.data;
+  },
+
   getMarketplace: async () => {
     const response = await api.get("admin/marketplace");
     return response.data;

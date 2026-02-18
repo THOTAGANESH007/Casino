@@ -119,14 +119,8 @@ const KYCRow = ({ kyc, onApprove, onReject }) => {
   const handleParse = async () => {
     setIsParsing(true);
     try {
-      // Endpoint created in previous step to run OCR on the Cloudinary PDF
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `${API_URL}/admin/kyc/${kyc.kyc_id}/parse`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      setParsedNo(res.data?.extracted_number);
+      const res = await adminAPI.parseKYC(kyc.kyc_id);
+      setParsedNo(res?.extracted_number);
     } catch (err) {
       alert(
         "OCR Parsing failed. You can still manually review the PDF and Accept.",

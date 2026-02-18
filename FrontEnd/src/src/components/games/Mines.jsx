@@ -3,7 +3,6 @@ import { minesAPI } from "../../api/games";
 import { useWallet } from "../../hooks/useWallet";
 import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
-import Input from "../common/Input";
 import { formatCurrency } from "../../utils/helpers";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -15,24 +14,17 @@ const Mines = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { getCashBalance, fetchWallets } = useWallet();
-  const {currency} = useAuth()
+  const { currency } = useAuth();
 
-  const GRID_SIZE = 25; // 5x5 grid
+  const GRID_SIZE = 25;
 
   const startNewGame = async () => {
     if (betAmount > getCashBalance()) {
       setError("Insufficient balance");
       return;
     }
-
-    if (numMines < 1 || numMines > 24) {
-      setError("Number of mines must be between 1 and 24");
-      return;
-    }
-
     setError("");
     setLoading(true);
-
     try {
       const data = await minesAPI.startGame(betAmount, numMines);
       setSessionId(data.session_id);
@@ -47,17 +39,13 @@ const Mines = () => {
 
   const revealTile = async (position) => {
     if (!sessionId || loading || gameState?.game_over) return;
-
     setLoading(true);
     try {
       const data = await minesAPI.revealTile(sessionId, position);
       setGameState(data.result);
-
-      if (data.result.game_over) {
-        await fetchWallets();
-      }
+      if (data.result.game_over) await fetchWallets();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to reveal tile");
+      setError("Failed to reveal tile");
     } finally {
       setLoading(false);
     }
@@ -65,14 +53,13 @@ const Mines = () => {
 
   const cashout = async () => {
     if (!sessionId || loading) return;
-
     setLoading(true);
     try {
       const data = await minesAPI.cashout(sessionId);
       setGameState(data.result);
       await fetchWallets();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to cashout");
+      setError("Failed to cashout");
     } finally {
       setLoading(false);
     }
@@ -84,96 +71,200 @@ const Mines = () => {
     setError("");
   };
 
-  const isTileRevealed = (position) => {
-    return gameState?.revealed?.includes(position);
-  };
-
-  const isTileMine = (position) => {
-    return gameState?.mine_positions?.includes(position);
-  };
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="bg-linear-to-r from-yellow-500 to-orange-600 rounded-xl shadow-lg p-6 text-white mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">💣 Mines</h1>
-            <p className="text-yellow-100">Reveal tiles and avoid mines!</p>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* PROFESSIONAL HEADER */}
+      <div className="bg-linear-to-r from-slate-900 to-orange-900 rounded-2xl shadow-2xl p-6 text-white mb-8 border-b-4 border-orange-500 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-orange-600 p-3 rounded-xl shadow-lg">
+            <span className="text-4xl">💣</span>
           </div>
-          <div className="text-right">
-            <p className="text-yellow-100 text-sm mb-1">Balance</p>
-            <p className="text-3xl font-bold">
-              {formatCurrency(getCashBalance(), currency)}
+          <div>
+            <h1 className="text-3xl font-black tracking-tighter uppercase italic">
+              Minesweeper Pro
+            </h1>
+            <p className="text-orange-300 text-xs font-bold tracking-widest uppercase">
+              High Volatility Risk
             </p>
           </div>
+        </div>
+        <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 text-center">
+          <p className="text-gray-400 text-[10px] uppercase font-black mb-1">
+            Total Balance
+          </p>
+          <p className="text-2xl font-mono font-bold text-green-400 leading-none">
+            {formatCurrency(getCashBalance(), currency)}
+          </p>
         </div>
       </div>
 
       <ErrorMessage message={error} onClose={() => setError("")} />
 
       {!gameState ? (
-        /* Game Setup */
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-            Setup Game
-          </h2>
-
-          <div className="max-w-md mx-auto space-y-6">
-            <Input
-              label="Bet Amount"
-              type="number"
-              value={betAmount}
-              onChange={(e) => setBetAmount(parseFloat(e.target.value))}
-              min="1"
-              step="1"
-            />
-
+        /*SETUP & RULES*/
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-in fade-in duration-700">
+          {/* DETAILED RULES */}
+          <div className="lg:col-span-2 space-y-8 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
             <div>
-              <label className="label">Number of Mines: {numMines}</label>
-              <input
-                type="range"
-                value={numMines}
-                onChange={(e) => setNumMines(parseInt(e.target.value))}
-                min="1"
-                max="24"
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-sm text-gray-600 mt-1">
-                <span>1 mine</span>
-                <span>24 mines</span>
+              <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <span className="bg-orange-50 text-orange-600 p-2 rounded-xl text-xl">
+                  📜
+                </span>
+                How to Play & Multipliers
+              </h2>
+
+              <div className="prose prose-orange max-w-none text-gray-600 space-y-6">
+                <p>
+                  Mines is a game of intuition. The 5x5 grid contains{" "}
+                  <strong>25 hidden tiles</strong>. Some contain hidden gems,
+                  others contain explosive mines.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-5 rounded-2xl border-l-4 border-slate-900">
+                    <h4 className="font-black text-slate-900 uppercase text-xs mb-2">
+                      The Multiplier
+                    </h4>
+                    <p className="text-sm">
+                      Every time you find a{" "}
+                      <span className="text-green-600 font-bold">Gem 💎</span>,
+                      your win multiplier increases. You can cash out at any
+                      time!
+                    </p>
+                  </div>
+                  <div className="bg-orange-50 p-5 rounded-2xl border-l-4 border-orange-500">
+                    <h4 className="font-black text-orange-800 uppercase text-xs mb-2">
+                      The Risk
+                    </h4>
+                    <p className="text-sm">
+                      If you click a{" "}
+                      <span className="text-red-600 font-bold">Mine 💣</span>,
+                      the game ends immediately and your wager is lost.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 p-6 rounded-2xl text-white">
+                  <h4 className="font-black text-orange-500 uppercase text-xs mb-4">
+                    Risk Adjustment
+                  </h4>
+                  <p className="text-sm text-gray-300 mb-4">
+                    Increasing the number of mines significantly boosts the
+                    multiplier growth per tile revealed.
+                  </p>
+                  <ul className="space-y-2 text-xs">
+                    <li className="flex justify-between border-b border-white/10 pb-1">
+                      <span>1 Mine</span>{" "}
+                      <span className="text-orange-400">
+                        Low Risk / Steady Growth
+                      </span>
+                    </li>
+                    <li className="flex justify-between border-b border-white/10 pb-1">
+                      <span>5 Mines</span>{" "}
+                      <span className="text-orange-400">
+                        Medium Risk / Fast Growth
+                      </span>
+                    </li>
+                    <li className="flex justify-between border-b border-white/10 pb-1">
+                      <span>20+ Mines</span>{" "}
+                      <span className="text-red-500 font-bold">
+                        EXTREME Risk / Insane Payouts
+                      </span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                <strong>How to play:</strong> Click tiles to reveal. Avoid mines
-                to win! The more tiles you reveal, the higher your multiplier.
-              </p>
+          {/*STICKY BET SLIP */}
+          <div className="lg:col-span-1 lg:sticky lg:top-8">
+            <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-900 overflow-hidden">
+              <div className="bg-slate-900 p-5 text-white text-center">
+                <h3 className="font-black uppercase tracking-widest text-xs">
+                  Game Configuration
+                </h3>
+              </div>
+
+              <div className="p-8 space-y-8">
+                {/* Wager Input */}
+                <div className="text-center">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-4">
+                    Wager Amount
+                  </label>
+                  <div className="flex items-center justify-between bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                    <button
+                      onClick={() => setBetAmount(Math.max(1, betAmount - 10))}
+                      className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-200 font-bold"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      value={betAmount}
+                      onChange={(e) =>
+                        setBetAmount(parseFloat(e.target.value) || 0)
+                      }
+                      className="w-20 text-center text-2xl font-black text-slate-800 bg-transparent focus:outline-none"
+                    />
+                    <button
+                      onClick={() => setBetAmount(betAmount + 10)}
+                      className="w-10 h-10 rounded-xl bg-white shadow-sm border border-gray-200 font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mines Slider */}
+                <div className="space-y-4">
+                  <div className="flex justify-between text-[10px] font-black text-gray-400 uppercase">
+                    <span>Mines Count</span>
+                    <span className="text-orange-600">{numMines}</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={numMines}
+                    onChange={(e) => setNumMines(parseInt(e.target.value))}
+                    min="1"
+                    max="24"
+                    className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                  />
+                  <div className="flex justify-between gap-1">
+                    {[1, 3, 5, 10, 20].map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setNumMines(m)}
+                        className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${numMines === m ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={startNewGame}
+                  disabled={loading || betAmount <= 0}
+                  className="w-full py-5 rounded-2xl font-black text-white shadow-xl transition-all active:scale-95 flex items-center justify-center bg-orange-600 hover:bg-orange-700"
+                >
+                  {loading ? "INITIALIZING..." : "START ROUND"}
+                </button>
+              </div>
             </div>
-
-            <Button
-              onClick={startNewGame}
-              disabled={loading}
-              variant="primary"
-              size="lg"
-              className="w-full"
-            >
-              {loading ? "Starting..." : "Start Game"}
-            </Button>
           </div>
         </div>
       ) : (
-        /* Game Board */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Mines Grid */}
+        /* ACTIVE GAME GRID*/
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-in zoom-in duration-500">
+          {/* MAIN 5x5 GRID */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="grid grid-cols-5 gap-3">
+            <div className="bg-slate-900 p-4 md:p-8 rounded-[40px] shadow-2xl border-12 border-slate-800">
+              <div className="grid grid-cols-5 gap-2 md:gap-4 aspect-square">
                 {Array.from({ length: GRID_SIZE }, (_, i) => i).map(
                   (position) => {
-                    const revealed = isTileRevealed(position);
-                    const isMine = isTileMine(position);
+                    const revealed = gameState.revealed?.includes(position);
+                    const isMine = gameState.mine_positions?.includes(position);
                     const showMine = revealed && isMine;
                     const showSafe = revealed && !isMine;
 
@@ -183,27 +274,16 @@ const Mines = () => {
                         onClick={() => revealTile(position)}
                         disabled={revealed || gameState.game_over || loading}
                         className={`
-                        aspect-square rounded-lg font-bold text-2xl transition-all duration-200
-                        ${
-                          !revealed && !gameState.game_over
-                            ? "bg-linear-to-br from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 shadow-md hover:shadow-lg transform hover:scale-105"
-                            : ""
-                        }
-                        ${
-                          showMine
-                            ? "bg-linear-to-br from-red-500 to-red-600 text-white"
-                            : ""
-                        }
-                        ${
-                          showSafe
-                            ? "bg-linear-to-br from-green-500 to-green-600 text-white"
-                            : ""
-                        }
-                        disabled:cursor-not-allowed
+                        aspect-square rounded-xl md:rounded-2xl text-2xl md:text-4xl flex items-center justify-center transition-all duration-300
+                        ${!revealed && !gameState.game_over ? "bg-slate-700 shadow-[inset_0_-4px_0_rgba(0,0,0,0.3)] hover:bg-slate-600 hover:-translate-y-1 active:translate-y-1 active:bg-slate-800" : ""}
+                        ${showMine ? "bg-red-500 shadow-lg shadow-red-900/50 scale-95" : ""}
+                        ${showSafe ? "bg-linear-to-br from-green-400 to-emerald-600 shadow-lg shadow-emerald-900/50 scale-95" : ""}
+                        ${!revealed && gameState.game_over ? "opacity-40 grayscale" : ""}
                       `}
                       >
                         {showMine && "💣"}
                         {showSafe && "💎"}
+                        {!revealed && gameState.game_over && isMine && "💣"}
                       </button>
                     );
                   },
@@ -212,106 +292,75 @@ const Mines = () => {
             </div>
           </div>
 
-          {/* Game Info */}
+          {/* ACTIVE GAME STATS SIDEBAR */}
           <div className="space-y-6">
-            {/* Stats */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Game Info
-              </h2>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Bet Amount:</span>
-                  <span className="font-bold">{formatCurrency(betAmount, currency)}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Mines:</span>
-                  <span className="font-bold">{numMines}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Revealed:</span>
-                  <span className="font-bold">
-                    {gameState.revealed?.length || 0}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Safe Tiles Left:</span>
-                  <span className="font-bold">
-                    {25 - numMines - (gameState.revealed?.length || 0)}
-                  </span>
-                </div>
+            <div className="bg-linear-to-br from-orange-500 to-red-600 rounded-3xl p-8 text-white shadow-2xl text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl font-black italic select-none">
+                WIN
               </div>
-            </div>
-
-            {/* Multiplier */}
-            <div className="bg-linear-to-br from-primary-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-              <h3 className="text-sm font-semibold mb-2">Current Multiplier</h3>
-              <p className="text-5xl font-bold">
-                {gameState.multiplier?.toFixed(2)}x
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">
+                Current Payout
               </p>
-              <p className="text-sm mt-2 text-primary-100">
-                Potential Win:{" "}
+              <p className="text-6xl font-black tracking-tighter mb-2">
+                {gameState.multiplier?.toFixed(2)}
+                <span className="text-xl">x</span>
+              </p>
+              <p className="text-xl font-mono font-bold text-orange-100">
                 {formatCurrency(betAmount * gameState.multiplier, currency)}
               </p>
             </div>
 
-            {/* Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400 font-bold uppercase">
+                  Gems Found
+                </span>
+                <span className="text-emerald-600 font-black">
+                  {gameState.revealed?.length || 0} / {25 - numMines}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400 font-bold uppercase">
+                  Next Value
+                </span>
+                <span className="text-slate-800 font-black">---</span>
+              </div>
+
               {!gameState.game_over ? (
-                <div className="space-y-3">
-                  <Button
-                    onClick={cashout}
-                    disabled={
-                      loading || (gameState.revealed?.length || 0) === 0
-                    }
-                    variant="success"
-                    size="lg"
-                    className="w-full"
-                  >
-                    💰 Cash Out
-                  </Button>
-                  <p className="text-sm text-gray-600 text-center">
-                    Click tiles to increase multiplier
-                  </p>
-                </div>
+                <Button
+                  onClick={cashout}
+                  disabled={loading || !gameState.revealed?.length}
+                  variant="success"
+                  size="lg"
+                  className="w-full py-5 rounded-2xl font-black text-lg shadow-xl shadow-green-100"
+                >
+                  💰 CASH OUT
+                </Button>
               ) : (
-                <div className="space-y-4">
-                  {/* Result */}
+                <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
                   <div
-                    className={`
-                    rounded-lg p-4 text-center
-                    ${
-                      gameState.game_won
-                        ? "bg-green-50 border border-green-200"
-                        : "bg-red-50 border border-red-200"
-                    }
-                  `}
+                    className={`p-4 rounded-2xl text-center ${gameState.game_won ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
                   >
-                    <p
-                      className={`text-3xl font-bold mb-2 ${
-                        gameState.game_won ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {gameState.game_won ? "🎉 You Won!" : "💥 Boom!"}
+                    <p className="font-black text-xl uppercase tracking-tighter">
+                      {gameState.game_won ? "Hand Won!" : "Game Over"}
                     </p>
                     {gameState.game_won && (
-                      <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(betAmount * gameState.multiplier, currency)}
+                      <p className="font-mono font-bold">
+                        +
+                        {formatCurrency(
+                          betAmount * gameState.multiplier,
+                          currency,
+                        )}
                       </p>
                     )}
                   </div>
-
                   <Button
                     onClick={resetGame}
                     variant="primary"
                     size="lg"
-                    className="w-full"
+                    className="w-full py-5 rounded-2xl font-black"
                   >
-                    New Game
+                    NEW ROUND
                   </Button>
                 </div>
               )}

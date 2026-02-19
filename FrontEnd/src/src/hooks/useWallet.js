@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, createContext } from "react";
 import { walletAPI } from "../api/wallet";
 import { storage } from "../utils/storage";
+
+const WalletContext = createContext();
 
 export const useWallet = () => {
   const [wallets, setWallets] = useState([]);
@@ -54,7 +56,6 @@ export const useWallet = () => {
   const deposit = async (amount) => {
     try {
       const data = await walletAPI.depositStripe(amount);
-      console.log("Deposit Response Data:", data);
       // Redirect to Stripe Checkout
       if (data.checkout_url) {
         window.location.href = data.checkout_url;

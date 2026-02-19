@@ -18,6 +18,7 @@ const WalletOverview = () => {
     getCashBalance,
     getBonusBalance,
     getPointsBalance,
+    fetchWallets
   } = useWallet();
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
@@ -30,14 +31,14 @@ const WalletOverview = () => {
     const status = searchParams.get("status");
     if (status === "success") {
       setStatusMsg("Deposit Successful! Wallet updated.");
-      walletAPI.getWallets(); // Ensure we have latest balance
+      fetchWallets()
       // Clean URL
       window.history.replaceState({}, document.title, "/wallet");
     } else if (status === "cancel") {
       setStatusMsg("Deposit cancelled.");
       window.history.replaceState({}, document.title, "/wallet");
     }
-  }, [searchParams, walletAPI.getWallets]);
+  }, [searchParams, fetchWallets]);
   if (loading) return <Loading message="Loading wallet..." />;
 
   return (

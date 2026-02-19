@@ -36,6 +36,7 @@ import RealMatches from "./src/components/games/RealMatches.jsx";
 import RealTeamBuilder from "./src/components/games/RealTeamBuilder.jsx";
 import MyTeamsPage from "./src/components/pages/MyTeamsPage.jsx";
 import LeaderboardPage from "./src/components/pages/LeaderboardPage.jsx";
+import { WalletProvider } from "./src/context/WalletContext.jsx";
 
 const RoleBasedRedirect = () => {
   const { isAuthenticated, isAdmin, isCasinoOwner } = useAuth();
@@ -60,6 +61,7 @@ const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <WalletProvider>
         <div className="min-h-screen bg-gray-50">
           <Navbar />
           <main>
@@ -264,6 +266,7 @@ const App = () => {
             </Routes>
           </main>
         </div>
+        </WalletProvider>
       </AuthProvider>
     </BrowserRouter>
   );

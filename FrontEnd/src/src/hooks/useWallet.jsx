@@ -1,10 +1,16 @@
-import { useState, useEffect, useCallback, createContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import { walletAPI } from "../api/wallet";
 import { storage } from "../utils/storage";
 
 const WalletContext = createContext();
 
-export const useWallet = () => {
+export const WalletProvider = ({ children }) => {
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,7 +30,6 @@ export const useWallet = () => {
     } catch (err) {
       if (err.response?.status !== 401) {
         setError("Failed to load wallet data");
-        console.error(err);
       }
     } finally {
       setLoading(false);
@@ -56,43 +61,50 @@ export const useWallet = () => {
   const deposit = async (amount) => {
     try {
       const data = await walletAPI.depositStripe(amount);
-      // Redirect to Stripe Checkout
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
         return { success: true, redirect: true };
       }
       return { success: false, error: "No checkout URL returned" };
     } catch (err) {
-      console.error("Deposit Error Details:", err.response?.data);
-      return {
-        success: false,
-        error: err.response?.data?.detail || "Deposit initialization failed",
-      };
+      return { success: false, error: "Deposit initialization failed" };
     }
   };
 
   const withdraw = async (amount) => {
     try {
       await walletAPI.withdrawStripe(amount);
-      await fetchWallets(); // Refresh balance
+      await fetchWallets();
       return { success: true };
     } catch (err) {
-      return {
-        success: false,
-        error: err.response?.data?.detail || "Withdrawal failed",
-      };
+      return { success: false, error: "Withdrawal failed" };
     }
   };
 
-  return {
-    wallets,
-    loading,
-    error,
-    fetchWallets,
-    getCashBalance,
-    getBonusBalance,
-    getPointsBalance,
-    deposit,
-    withdraw,
-  };
+  return (
+    <WalletContext.Provider
+      value={{
+        wallets,
+        loading,
+        error,
+        fetchWallets,
+        getCashBalance,
+        getBonusBalance,
+        getPointsBalance,
+        deposit,
+        withdraw,
+      }}
+    >
+      {children}
+    </WalletContext.Provider>
+  );
+};
+
+// Hook to use the shared context
+export const useWallet = () => {
+  const context = useContext(WalletContext);
+  if (!context) {
+    throw new Error("useWallet must be used within a WalletProvider");
+  }
+  return context;
 };

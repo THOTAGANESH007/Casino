@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useWallet } from "../../hooks/useWallet";
 import { formatCurrency } from "../../utils/helpers";
-import { useMemo} from "react";
+import { useMemo } from "react";
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin, isCasinoOwner, currency } =
@@ -16,11 +16,8 @@ const Navbar = () => {
   };
 
   const formattedBalance = useMemo(() => {
-    var dat = formatCurrency(getCashBalance(), currency);
-    console.log(dat);
-    // return formatCurrency(getCashBalance(), currency);
-    return dat;
-  }, [wallets, currency]);
+    return formatCurrency(getCashBalance(), currency);
+  }, [wallets, currency, getCashBalance]);
 
   const location = useLocation();
   const restrictedRoutes = [

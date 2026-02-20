@@ -36,7 +36,7 @@ import RealMatches from "./src/components/games/RealMatches.jsx";
 import RealTeamBuilder from "./src/components/games/RealTeamBuilder.jsx";
 import MyTeamsPage from "./src/components/pages/MyTeamsPage.jsx";
 import LeaderboardPage from "./src/components/pages/LeaderboardPage.jsx";
-import { WalletProvider } from "./src/context/WalletContext.jsx";
+import { WalletProvider } from "./src/hooks/useWallet.jsx";
 
 const RoleBasedRedirect = () => {
   const { isAuthenticated, isAdmin, isCasinoOwner } = useAuth();
@@ -62,210 +62,210 @@ const App = () => {
     <BrowserRouter>
       <AuthProvider>
         <WalletProvider>
-        <div className="min-h-screen bg-gray-50">
-          <Navbar />
-          <main>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<RoleBasedRedirect />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
+          <div className="min-h-screen bg-gray-50">
+            <Navbar />
+            <main>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<RoleBasedRedirect />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              {/* Onboarding Routes */}
-              <Route
-                path="/select-region"
-                element={
-                  <ProtectedRoute>
-                    <RegionSelect />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/submit-kyc"
-                element={
-                  <ProtectedRoute>
-                    <KYCSubmit />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pending-verification"
-                element={<PendingVerification />}
-              />
+                {/* Onboarding Routes */}
+                <Route
+                  path="/select-region"
+                  element={
+                    <ProtectedRoute>
+                      <RegionSelect />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/submit-kyc"
+                  element={
+                    <ProtectedRoute>
+                      <KYCSubmit />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/pending-verification"
+                  element={<PendingVerification />}
+                />
 
-              {/* Admin Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Admin Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute adminOnly>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/admin-profile"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminProfile />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/admin-profile"
+                  element={
+                    <ProtectedRoute adminOnly>
+                      <AdminProfile />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Casino Owner Route */}
-              <Route
-                path="/owner-dashboard"
-                element={
-                  <ProtectedRoute ownerOnly>
-                    <OwnerDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Casino Owner Route */}
+                <Route
+                  path="/owner-dashboard"
+                  element={
+                    <ProtectedRoute ownerOnly>
+                      <OwnerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/owner-profile"
-                element={
-                  <ProtectedRoute ownerOnly>
-                    <OwnerProfile />
-                  </ProtectedRoute>
-                }
-              />
-              {/* User Routes */}
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/owner-profile"
+                  element={
+                    <ProtectedRoute ownerOnly>
+                      <OwnerProfile />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* User Routes */}
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <UserProfile />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/responsible-gaming"
-                element={
-                  <ProtectedRoute>
-                    <ResponsibleGaming />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/responsible-gaming"
+                  element={
+                    <ProtectedRoute>
+                      <ResponsibleGaming />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Wallet Routes */}
-              <Route
-                path="/wallet"
-                element={
-                  <ProtectedRoute>
-                    <WalletOverview />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Wallet Routes */}
+                <Route
+                  path="/wallet"
+                  element={
+                    <ProtectedRoute>
+                      <WalletOverview />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Game Routes */}
-              <Route
-                path="/games"
-                element={
-                  <ProtectedRoute>
-                    <GamesList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/games/blackjack"
-                element={
-                  <ProtectedRoute>
-                    <Blackjack />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/games/dice"
-                element={
-                  <ProtectedRoute>
-                    <Dice />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/games/slots"
-                element={
-                  <ProtectedRoute>
-                    <Slots />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Game Routes */}
+                <Route
+                  path="/games"
+                  element={
+                    <ProtectedRoute>
+                      <GamesList />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/games/blackjack"
+                  element={
+                    <ProtectedRoute>
+                      <Blackjack />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/games/dice"
+                  element={
+                    <ProtectedRoute>
+                      <Dice />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/games/slots"
+                  element={
+                    <ProtectedRoute>
+                      <Slots />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/games/roulette"
-                element={
-                  <ProtectedRoute>
-                    <Roulette />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/games/roulette"
+                  element={
+                    <ProtectedRoute>
+                      <Roulette />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/games/fantasy-cricket"
-                element={
-                  <ProtectedRoute>
-                    <FantasyCricket />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/games/fantasy-cricket"
+                  element={
+                    <ProtectedRoute>
+                      <FantasyCricket />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/games/crash"
-                element={
-                  <ProtectedRoute>
-                    <Crash />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/games/crash"
+                  element={
+                    <ProtectedRoute>
+                      <Crash />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/games/mines"
-                element={
-                  <ProtectedRoute>
-                    <Mines />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/games/real-fantasy"
-                element={
-                  <ProtectedRoute>
-                    <RealMatches />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/games/real-fantasy/create/:matchId"
-                element={
-                  <ProtectedRoute>
-                    <RealTeamBuilder />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/my-teams"
-                element={
-                  <ProtectedRoute>
-                    <MyTeamsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/leaderboard/:matchId"
-                element={
-                  <ProtectedRoute>
-                    <LeaderboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              {/* 404 - Redirect to games */}
-              <Route path="*" element={<Navigate to="/games" replace />} />
-            </Routes>
-          </main>
-        </div>
+                <Route
+                  path="/games/mines"
+                  element={
+                    <ProtectedRoute>
+                      <Mines />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/games/real-fantasy"
+                  element={
+                    <ProtectedRoute>
+                      <RealMatches />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/games/real-fantasy/create/:matchId"
+                  element={
+                    <ProtectedRoute>
+                      <RealTeamBuilder />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/my-teams"
+                  element={
+                    <ProtectedRoute>
+                      <MyTeamsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/leaderboard/:matchId"
+                  element={
+                    <ProtectedRoute>
+                      <LeaderboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* 404 - Redirect to games */}
+                <Route path="*" element={<Navigate to="/games" replace />} />
+              </Routes>
+            </main>
+          </div>
         </WalletProvider>
       </AuthProvider>
     </BrowserRouter>

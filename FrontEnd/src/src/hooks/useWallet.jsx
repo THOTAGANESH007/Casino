@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { walletAPI } from "../api/wallet";
 import { storage } from "../utils/storage";
+import { useAuth } from "./useAuth";
 
 const WalletContext = createContext();
 
@@ -14,6 +15,7 @@ export const WalletProvider = ({ children }) => {
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const isAuthenticated = useAuth();
 
   const fetchWallets = useCallback(async () => {
     const token = storage.getToken();
@@ -37,8 +39,12 @@ export const WalletProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchWallets();
-  }, [fetchWallets]);
+    if (isAuthenticated) {
+      fetchWallets();
+    } else {
+      setWallets([]);
+    }
+  }, [fetchWallets, isAuthenticated]);
 
   const getCashBalance = () => {
     if (!wallets || wallets.length === 0) return 0;

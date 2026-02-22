@@ -61,8 +61,6 @@ async def get_all_tenants(
 ):
     """Get all tenants across all regions"""
     tenants = db.query(Tenant).all()
-    for tenant in tenants:
-        print(f"Tenant: {tenant.tenant_name}, Region: {tenant.region.region_name if tenant.region else 'N/A'}")
     return tenants
 
 @router.get("/tenants/{tenant_id}", response_model=TenantResponse)
@@ -429,6 +427,7 @@ async def create_admin_user_for_tenant(
         phone=admin_data.phone,
         role=UserType.admin,
         tenant_id=admin_data.tenant_id,
+        region_id=tenant.region_id if tenant.region_id else None,
         is_active=True
     )
     

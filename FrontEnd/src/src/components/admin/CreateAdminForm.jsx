@@ -62,9 +62,8 @@ const CreateAdminForm = ({ onSuccess }) => {
     setError("");
     setSuccess("");
 
-    // Basic Validation
     if (!formData.tenant_id) {
-      setError("Please select a tenant.");
+      setError("Please select a casino brand (tenant).");
       setLoading(false);
       return;
     }
@@ -77,7 +76,9 @@ const CreateAdminForm = ({ onSuccess }) => {
 
       await ownerAPI.createTenantAdmin(payload);
 
-      setSuccess(`Admin user created for ${formData.email}`);
+      setSuccess(
+        `Admin user created for ${formData.email}. Region automatically assigned.`,
+      );
 
       // Reset form
       setFormData({
@@ -94,7 +95,6 @@ const CreateAdminForm = ({ onSuccess }) => {
       }
     } catch (err) {
       const msg = err.response?.data?.detail;
-      // Handle Pydantic array errors or simple string errors
       if (Array.isArray(msg)) {
         setError(msg.map((e) => e.msg).join(", "));
       } else {
@@ -165,7 +165,8 @@ const CreateAdminForm = ({ onSuccess }) => {
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Assign Tenant <span className="text-red-600">*</span>
+            Assign to Casino Brand (Tenant){" "}
+            <span className="text-red-600">*</span>
           </label>
           <select
             name="tenant_id"
@@ -176,14 +177,21 @@ const CreateAdminForm = ({ onSuccess }) => {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
           >
             <option value="">
-              {fetchingTenants ? "Loading tenants..." : "-- Select Tenant --"}
+              {fetchingTenants
+                ? "Loading tenants..."
+                : "-- Select Casino Brand --"}
             </option>
             {tenants.map((tenant) => (
               <option key={tenant.tenant_id} value={tenant.tenant_id}>
-                {tenant.tenant_name} (ID: {tenant.tenant_id})
+                {/* Displaying Region ID in the UI so the owner knows where this admin operates */}
+                {tenant.tenant_name} (Region: {tenant.region_name || "N/A"})
               </option>
             ))}
           </select>
+          <p className="text-xs text-gray-500 mt-1">
+            The administrator will automatically be restricted to the region
+            this casino belongs to.
+          </p>
         </div>
 
         <div className="pt-4">

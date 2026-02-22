@@ -393,3 +393,122 @@ CREATE TABLE team_players (
     FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE,
     UNIQUE(team_id, player_id)
 );
+
+
+CREATE TABLE analytics_snapshots (
+    snapshot_id SERIAL PRIMARY KEY,
+    tenant_id INTEGER NOT NULL REFERENCES tenants(tenant_id),
+    region_id INTEGER NOT NULL REFERENCES tenant_regions(region_id),
+    snapshot_date DATE NOT NULL,
+    total_wagered NUMERIC(18, 2) DEFAULT 0,
+    total_payout NUMERIC(18, 2) DEFAULT 0,
+    total_ggr NUMERIC(18, 2) DEFAULT 0,
+    total_ngr NUMERIC(18, 2) DEFAULT 0,
+    active_users INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_snapshot_date UNIQUE (tenant_id, snapshot_date)
+);
+
+
+CREATE OR REPLACE FUNCTION generate_daily_analytics_snapshot()
+RETURNS void AS $$
+BEGIN
+    INSERT INTO analytics_snapshots (
+        tenant_id, 
+        region_id, 
+        snapshot_date, 
+        total_wagered, 
+        total_payout, 
+        total_ggr, 
+        total_ngr, 
+        active_users
+    )
+    SELECT 
+        t.tenant_id,
+        t.region_id,
+        CURRENT_DATE - INTERVAL '1 day' AS snapshot_date,
+        COALESCE(SUM(b.bet_amount), 0) AS total_wagered,
+        COALESCE(SUM(b.payout_amount), 0) AS total_payout,
+        COALESCE(SUM(b.bet_amount) - SUM(b.payout_amount), 0) AS total_ggr,
+        -- Calculate NGR by deducting the tenant's regional tax rate from the GGR
+        COALESCE((SUM(b.bet_amount) - SUM(b.payout_amount)) * (1 - (tr.tax_rate / 100)), 0) AS total_ngr,
+        COUNT(DISTINCT gs.user_id) AS active_users
+    FROM tenants t
+    JOIN tenant_regions tr ON t.region_id = tr.region_id
+    LEFT JOIN users u ON u.tenant_id = t.tenant_id
+    LEFT JOIN game_session gs ON gs.user_id = u.user_id AND DATE(gs.started_at) = CURRENT_DATE - INTERVAL '1 day'
+    LEFT JOIN game_round gr ON gr.session_id = gs.session_id
+    LEFT JOIN bet b ON b.round_id = gr.round_id AND b.bet_status != 'cancelled'
+    GROUP BY t.tenant_id, t.region_id
+    
+    -- If a snapshot for this date already exists, update it instead of crashing
+    ON CONFLICT ON CONSTRAINT uq_tenant_snapshot_date 
+    DO UPDATE SET 
+        total_wagered = EXCLUDED.total_wagered,
+        total_payout = EXCLUDED.total_payout,
+        total_ggr = EXCLUDED.total_ggr,
+        total_ngr = EXCLUDED.total_ngr,
+        active_users = EXCLUDED.active_users;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- 1. Enable the pg_cron extension (requires superuser privileges)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- 2. Schedule the job to run every day at 01:00 AM database time
+SELECT cron.schedule(
+    'daily_analytics_rollup',   -- Job Name
+    '0 1 * * *',                -- Cron expression (1:00 AM daily)
+    'SELECT generate_daily_analytics_snapshot();' -- Command to execute
+);
+
+
+CREATE OR REPLACE FUNCTION log_cash_wallet_transaction()
+RETURNS TRIGGER AS $$
+DECLARE
+    balance_diff NUMERIC(18,2);
+    v_txn_direction txn_directions;
+BEGIN
+    -- Calculate the difference in balance
+    balance_diff := NEW.balance - OLD.balance;
+
+    -- Only proceed if the balance actually changed AND it is a 'cash' wallet
+    IF balance_diff <> 0 AND NEW.type_of_wallet = 'cash' THEN
+        
+        -- Determine direction based on the ENUM you provided ('credit' or 'debit')
+        IF balance_diff > 0 THEN
+            v_txn_direction := 'credit';
+        ELSE
+            v_txn_direction := 'debit';
+        END IF;
+
+        -- Insert the audit record into wallet_transactions
+        INSERT INTO public.wallet_transactions (
+            wallet_id,
+            txn_type,          -- Using 'cash' because the DB doesn't know the payment method
+            txn_direction,     -- 'credit' or 'debit'
+            txn_status,        -- Assuming your txn_statuses ENUM has 'completed'
+            amount,
+            txn_done_at
+        ) VALUES (
+            NEW.wallet_id,
+            'debit_card',            -- Defaulting to 'cash' 
+            v_txn_direction,
+            'success',       
+            ABS(balance_diff), -- Always store amount as a positive number
+            CURRENT_TIMESTAMP
+        );
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE TRIGGER trg_audit_cash_wallet
+AFTER UPDATE OF balance ON public.wallet
+FOR EACH ROW
+WHEN (OLD.balance IS DISTINCT FROM NEW.balance) 
+EXECUTE FUNCTION log_cash_wallet_transaction();

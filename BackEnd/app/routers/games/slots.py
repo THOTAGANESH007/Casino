@@ -34,7 +34,8 @@ async def spin_slots(
     # Process the bet using hybrid wallet system (Cash + Bonus + Points)
     txn_details = wallet_service.process_game_bet(
         db, 
-        current_user.user_id, 
+        current_user.user_id,
+        current_user.tenant_id,
         spin_data.bet_amount
     )
     
@@ -70,7 +71,7 @@ async def spin_slots(
     
     # Credit payout if won
     if result["payout"] > 0:
-        wallet_service.credit_winnings(db, current_user.user_id, result["payout"], game.game_id, bet_record.bet_id)
+        wallet_service.credit_winnings(db, current_user.user_id, result["payout"], game.game_id, current_user.tenant_id, bet_record.bet_id)
     
     # Close session
     from datetime import datetime

@@ -8,13 +8,13 @@ import Loading from "../common/Loading";
 import Button from "../common/Button";
 
 const RegionSelect = () => {
-  // Raw Data
-  const [allRegions, setAllRegions] = useState([]);
-  const [tenantsMap, setTenantsMap] = useState({}); // Map ID -> Name
+  // Raw Data from Backend
+  const [regions, setRegions] = useState([]); // List of TenantRegion objects
+  const [allTenants, setAllTenants] = useState([]); // List of Tenant objects
 
   // Form State
-  const [selectedRegionName, setSelectedRegionName] = useState("");
-  const [selectedRegionId, setSelectedRegionId] = useState(""); // This is the final value to submit
+  const [selectedRegionId, setSelectedRegionId] = useState("");
+  const [selectedTenantId, setSelectedTenantId] = useState("");
 
   // UI State
   const [loading, setLoading] = useState(true);
@@ -25,156 +25,145 @@ const RegionSelect = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchData();
+    fetchInitialData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [regionsData, tenantsData] = await Promise.all([
+      // Fetch the global regions and all tenants
+      const [regionsRes, tenantsRes] = await Promise.all([
         adminAPI.getRegions(),
         adminAPI.getTenants(),
       ]);
 
-      setAllRegions(regionsData);
-
-      // Create a lookup map for tenants: { 1: "LuckySpins", 2: "RoyalBet" }
-      const tMap = {};
-      tenantsData.forEach((t) => {
-        tMap[t.tenant_id] = t.tenant_name;
-      });
-      setTenantsMap(tMap);
-
+      setRegions(regionsRes.data || regionsRes);
+      setAllTenants(tenantsRes.data || tenantsRes);
       setLoading(false);
     } catch (err) {
       console.error(err);
-      setError("Failed to load region and tenant data.");
+      setError(
+        "Failed to load region and casino data. Please check your connection.",
+      );
       setLoading(false);
     }
   };
 
-  // 1. Get Unique Region Names for the first dropdown
-  const uniqueRegionNames = [
-    ...new Set(allRegions.map((r) => r.region_name)),
-  ].sort();
-
-  // 2. Filter Tenants based on the selected Region Name
-  const availableTenantsForRegion = allRegions.filter(
-    (r) => r.region_name === selectedRegionName,
+  // Logic: Filter tenants based on the selected Region ID
+  // In your new schema, every Tenant has a 'region_id' property
+  const availableTenants = allTenants.filter(
+    (t) => t.region_id === parseInt(selectedRegionId),
   );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedRegionId) {
-      setError("Please select a casino tenant");
+    if (!selectedRegionId || !selectedTenantId) {
+      setError("Please select both a region and a casino brand");
       return;
     }
-
+    const payload = {
+      region_id: parseInt(selectedRegionId),
+      tenant_id: parseInt(selectedTenantId),
+    };
     setSubmitting(true);
     setError("");
 
     try {
-      // We submit the specific region_id which links the User to that specific Tenant & Region configuration
-      await authAPI.selectRegion(parseInt(selectedRegionId));
+      await authAPI.selectRegion(payload);
       await refreshUser();
+
+      // Move to KYC step
       navigate("/submit-kyc");
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to select region");
+      setError(err.response?.data?.detail || "Failed to save your selection");
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <Loading message="Loading gaming regions..." />;
+    return <Loading message="Preparing the casino floor..." />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-50 to-purple-50 py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-600 to-purple-600 py-12 px-4">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border-b-8 border-indigo-600">
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🌍</div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            Select Your Region
+          <div className="text-6xl mb-4 animate-bounce">🌍</div>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">
+            Join the Arena
           </h2>
-          <p className="mt-2 text-gray-600">
-            Choose your location and preferred casino
+          <p className="mt-2 text-gray-500 text-sm font-bold uppercase tracking-widest">
+            Select Location & Brand
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <ErrorMessage message={error} onClose={() => setError("")} />
 
-          {/* 1. Region Name Dropdown */}
+          {/* 1. REGION SELECTION (PERMANENT) */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              1. Select Region <span className="text-red-600">*</span>
+            <label className="block text-[10px] font-black text-indigo-600 uppercase mb-2 ml-1">
+              Step 1: Your Jurisdiction
             </label>
             <div className="relative">
               <select
-                value={selectedRegionName}
+                value={selectedRegionId}
                 onChange={(e) => {
-                  setSelectedRegionName(e.target.value);
-                  setSelectedRegionId(""); // Reset tenant selection when region changes
+                  setSelectedRegionId(e.target.value);
+                  setSelectedTenantId(""); // Reset tenant if region changes
                 }}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none bg-white"
+                className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-indigo-500 appearance-none bg-gray-50 font-bold text-gray-800 transition-all"
               >
-                <option value="">-- Select Location --</option>
-                {uniqueRegionNames.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
+                <option value="">-- Select Your Region --</option>
+                {regions.map((r) => (
+                  <option key={r.region_id} value={r.region_id}>
+                    {r.region_name} (Tax: {r.tax_rate}%)
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-indigo-600">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          {/* 2. Tenant (Casino) Dropdown - Only appears after region selection */}
-          {selectedRegionName && (
-            <div className="fade-in">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                2. Select Casino <span className="text-red-600">*</span>
+          {/* 2. TENANT SELECTION (ACTIVE CASINO) */}
+          {selectedRegionId && (
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <label className="block text-[10px] font-black text-indigo-600 uppercase mb-2 ml-1">
+                Step 2: Choose Your Casino
               </label>
               <div className="relative">
                 <select
-                  value={selectedRegionId}
-                  onChange={(e) => setSelectedRegionId(e.target.value)}
+                  value={selectedTenantId}
+                  onChange={(e) => setSelectedTenantId(e.target.value)}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none bg-white"
+                  className="w-full px-4 py-3 border-2 border-indigo-100 rounded-2xl focus:outline-none focus:border-indigo-500 appearance-none bg-indigo-50 font-bold text-indigo-900 transition-all"
                 >
-                  <option value="">-- Select Casino --</option>
-                  {availableTenantsForRegion.map((region) => (
-                    <option key={region.region_id} value={region.region_id}>
-                      {tenantsMap[region.tenant_id] ||
-                        `Casino ID: ${region.tenant_id}`}
-                      {/* Optional: Show tax rate if relevant */}
-                      {region.tax_rate > 0 ? ` (Tax: ${region.tax_rate}%)` : ""}
-                    </option>
-                  ))}
+                  <option value="">-- Select a Brand --</option>
+                  {availableTenants.length > 0 ? (
+                    availableTenants.map((t) => (
+                      <option key={t.tenant_id} value={t.tenant_id}>
+                        🎰 {t.tenant_name} ({t.default_currency})
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No casinos in this region yet</option>
+                  )}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <svg
-                    className="fill-current h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-indigo-600">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                   </svg>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Available casinos in {selectedRegionName}
+              <p className="text-[10px] text-gray-400 mt-2 italic px-1">
+                Note: You can switch between brands in this region later.
               </p>
             </div>
           )}
@@ -183,10 +172,10 @@ const RegionSelect = () => {
             type="submit"
             variant="primary"
             size="lg"
-            disabled={submitting || !selectedRegionId}
-            className="w-full"
+            disabled={submitting || !selectedTenantId}
+            className="w-full py-4 rounded-2xl shadow-xl shadow-indigo-200 transition-transform active:scale-95 font-black uppercase tracking-widest"
           >
-            {submitting ? "Processing..." : "Continue"}
+            {submitting ? "Establishing Connection..." : "Enter Casino"}
           </Button>
         </form>
       </div>

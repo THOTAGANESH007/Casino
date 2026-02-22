@@ -49,7 +49,7 @@ const CreateAdminForm = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const passwordRegex =
-      "^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$";
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
 
     if (!passwordRegex.test(formData.password)) {
       setError(

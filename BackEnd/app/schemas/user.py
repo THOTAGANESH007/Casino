@@ -33,6 +33,7 @@ class UserLogin(BaseModel):
 
 class UserRegionSelect(BaseModel):
     region_id: int
+    tenant_id: int
 
 class KYCSubmit(BaseModel):
     document_type: DocType
@@ -90,6 +91,7 @@ class FullUserProfile(BaseModel):
     currency: str
     kyc_status: bool
     stats: UserProfileStats
+    region_name: Optional[str] = None
 
 class ForgotPasswordRequest(BaseModel):
     email: str
@@ -97,6 +99,26 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str
     otp: str
+    new_password: str
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters")
+
+        if not re.search(r"[A-Za-z]", value):
+            raise ValueError("Password must contain a letter")
+
+        if not re.search(r"\d", value):
+            raise ValueError("Password must contain a number")
+
+        if not re.search(r"[@$!%*?&.]", value):
+            raise ValueError("Password must contain a special character")
+
+        return value
+    
+class ChangePasswordRequest(BaseModel):
+    current_password: str
     new_password: str
     @field_validator("new_password")
     @classmethod

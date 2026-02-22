@@ -30,13 +30,13 @@ import ForgotPassword from "./src/components/auth/ForgotPassword.jsx";
 import UserProfile from "./src/components/user/UserProfile.jsx";
 import ResponsibleGaming from "./src/components/user/ResponsibleGaming.jsx";
 import { useAuth } from "./src/hooks/useAuth.js";
-import AdminProfile from "./src/components/user/AdminProfile.jsx";
 import OwnerProfile from "./src/components/user/OwnerProfile.jsx";
 import RealMatches from "./src/components/games/RealMatches.jsx";
 import RealTeamBuilder from "./src/components/games/RealTeamBuilder.jsx";
 import MyTeamsPage from "./src/components/pages/MyTeamsPage.jsx";
 import LeaderboardPage from "./src/components/pages/LeaderboardPage.jsx";
 import { WalletProvider } from "./src/hooks/useWallet.jsx";
+import AdminProfile from "./src/components/user/AdminProfile.jsx";
 
 const RoleBasedRedirect = () => {
   const { isAuthenticated, isAdmin, isCasinoOwner } = useAuth();

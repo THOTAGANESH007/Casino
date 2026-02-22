@@ -110,8 +110,8 @@ async def update_stats(match_code: str, stats: UpdateStatsInput, db: Session = D
     db.commit()
     return {"message": "Stats updated"}
 
-@router.post("/admin/matches/{match_code}/settle", dependencies=[Depends(require_tenant_admin)])
-async def settle_match(match_code: str, db: Session = Depends(get_db)):
+@router.post("/admin/matches/{match_code}/settle")
+async def settle_match(match_code: str, current_user: User = Depends(require_tenant_admin), db: Session = Depends(get_db)):
     # 1. Validation
     match = db.query(FantasyMatch).filter(FantasyMatch.match_code == match_code).first()
     if not match or match.status != MatchStatus.live:
@@ -169,7 +169,7 @@ async def settle_match(match_code: str, db: Session = Depends(get_db)):
                 associated_bet.payout_amount = prize
                 
                 # Credit the winnings to the user's wallet
-                wallet_service.credit_winnings(db, team.user_id, prize, fantasy_game_type.game_id, associated_bet.bet_id)
+                wallet_service.credit_winnings(db, team.user_id, prize, fantasy_game_type.game_id, current_user.tenant_id, associated_bet.bet_id)
             else:
                 # LOSER FLOW
                 associated_bet.bet_status = BetStatus.lost
@@ -244,19 +244,19 @@ async def create_team(
         raise HTTPException(status_code=400, detail="Match not open")
     
     # 1. Payment
-    txn = wallet_service.process_game_bet(db, current_user.user_id, match.entry_fee)
+    txn = wallet_service.process_game_bet(db, current_user.user_id, current_user.tenant_id, match.entry_fee)
     
     # 2. Get Players from DB
     selected_players = db.query(FantasyPlayer).filter(FantasyPlayer.id.in_(data.player_ids)).all()
     fantasy_game_type = db.query(Game).filter(Game.game_name == "Fantasy Cricket").first()
     
     if len(selected_players) != 11:
-        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee, fantasy_game_type.game_id) # Refund
+        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee, fantasy_game_type.game_id, current_user.tenant_id) # Refund
         raise HTTPException(status_code=400, detail="Must select 11 players")
         
     total_cost = sum(p.credit_value for p in selected_players)
     if total_cost > match.max_budget:
-        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee, fantasy_game_type.game_id) # Refund
+        wallet_service.credit_winnings(db, current_user.user_id, match.entry_fee, fantasy_game_type.game_id, current_user.tenant_id) # Refund
         raise HTTPException(status_code=400, detail="Budget exceeded")
 
     # 3. Create Team

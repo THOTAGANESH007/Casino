@@ -4,9 +4,6 @@ import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
 import SuccessMessage from "../common/SuccessMessage";
 import Button from "../common/Button";
-import axios from "axios"; // Added axios import
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const KYCApproval = () => {
   const [kycList, setKycList] = useState([]);

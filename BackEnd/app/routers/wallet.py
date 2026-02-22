@@ -20,7 +20,7 @@ async def get_user_wallets(
     db: Session = Depends(get_db)
 ):
     """Get all wallets for the current user"""
-    wallets = wallet_service.get_all_wallets(db, current_user.user_id)
+    wallets = wallet_service.get_all_wallets(db, current_user.user_id, current_user.tenant_id)
     return wallets
 
 @router.get("/{wallet_type}", response_model=WalletResponse)
@@ -30,7 +30,7 @@ async def get_wallet_by_type(
     db: Session = Depends(get_db)
 ):
     """Get a specific wallet by type"""
-    wallet = wallet_service.get_wallet(db, current_user.user_id, wallet_type)
+    wallet = wallet_service.get_wallet(db, current_user.user_id, current_user.tenant_id, wallet_type)
     if not wallet:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -138,9 +138,10 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None),
             user_id = int(metadata.get('user_id'))
             # Amount comes in cents, convert back to decimal
             amount_paid = Decimal(session['amount_total']) / 100
-            
+            # Find the tenant Id from the userId
+            tenant_id = db.query(User).filter(User.user_id == user_id).first().tenant_id
             # Find User's Cash Wallet
-            wallet = wallet_service.get_wallet(db, user_id, WalletType.cash)
+            wallet = wallet_service.get_wallet(db, user_id, tenant_id, WalletType.cash)
             if wallet:
                 # Credit the wallet atomically
                 wallet_service.credit_wallet(db, wallet.wallet_id, amount_paid)
@@ -159,7 +160,7 @@ async def withdraw_funds(
     """Withdraw funds from wallet via Stripe"""
     
     # 1.1 Get Wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+    wallet = wallet_service.get_wallet(db, current_user.user_id, current_user.tenant_id, WalletType.cash)
     if not wallet or wallet.balance < withdraw_data.amount:
         raise HTTPException(status_code=400, detail="Insufficient funds")
     

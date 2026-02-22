@@ -4,14 +4,17 @@ from datetime import datetime
 
 class TenantCreate(BaseModel):
     tenant_name: str
+    region_id: int
     default_timezone: Optional[str] = None
     default_currency: Optional[str] = None
 
 class TenantResponse(BaseModel):
     tenant_id: int
     tenant_name: str
+    region_id: int
     default_timezone: Optional[str]
     status: bool
+    region_name: Optional[str]
     default_currency: Optional[str]
     created_at: datetime
     
@@ -19,13 +22,11 @@ class TenantResponse(BaseModel):
         from_attributes = True
 
 class RegionCreate(BaseModel):
-    tenant_id: int
     region_name: str
     tax_rate: Optional[float] = None
 
 class RegionResponse(BaseModel):
     region_id: int
-    tenant_id: int
     region_name: str
     tax_rate: Optional[float]
     

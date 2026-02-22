@@ -59,7 +59,7 @@ def create_fantasy_team(
 
     try:
         # Deduct entry fee
-        wallet_service.process_game_bet(db, current_user.user_id, match.entry_fee)
+        wallet_service.process_game_bet(db, current_user.user_id, current_user.tenant_id, match.entry_fee)
         # Update prize pool
         match.prize_pool = (match.prize_pool or 0) + match.entry_fee
     except Exception as e:

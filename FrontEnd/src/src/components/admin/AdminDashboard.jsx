@@ -3,14 +3,14 @@ import KYCApproval from "./KYCApproval";
 import UserManagement from "./UserManagement";
 import GameMarketplace from "./GameMarketplace";
 import FantasyMatchManager from "./FantasyMatchManager";
-import AdminProfile from "../user/AdminProfile";
+import AdminStats from "../user/AdminStats";
 import RealFantasyAdmin from "./RealFantasyAdmin";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("stats");
 
   const tabs = [
-    { id: "stats", label: "Overview", icon: "📊", component: AdminProfile },
+    { id: "stats", label: "Overview", icon: "📊", component: AdminStats },
     { id: "users", label: "My Players", icon: "👥", component: UserManagement },
     {
       id: "marketplace",

@@ -6,6 +6,9 @@ import ErrorMessage from "../common/ErrorMessage";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import { formatCurrency, formatDateTime } from "../../utils/helpers";
+import Modal from "../common/Modal";
+import Input from "../common/Input";
+import SuccessMessage from "../common/SuccessMessage";
 
 const UserProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -14,6 +17,14 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("active"); // 'active' or 'history'
+  const [success, setSuccess] = useState("");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -40,6 +51,47 @@ const UserProfile = () => {
     }
   };
 
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+
+    const passwordRegex =
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
+
+    if (!passwordRegex.test(passwordData.newPassword)) {
+      setError(
+        "Password must be at least 8 characters and include a letter, number, and special character",
+      );
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+      await userAPI.changePassword({
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+      });
+
+      setSuccess("Password updated successfully!");
+      setShowPasswordModal(false);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to change password");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const handleResumeGame = (gameName) => {
     // Map game names to frontend routes
     const routes = {
@@ -63,7 +115,8 @@ const UserProfile = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error} onClose={() => setError("")} />
+      <SuccessMessage message={success} onClose={() => setSuccess("")} />
 
       {/* 1. Profile Header & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -94,6 +147,17 @@ const UserProfile = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Currency:</span>
               <span className="font-semibold">{profile?.currency}</span>
+            </div>
+            {/* Change Password Button */}
+            <div className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full text-xs"
+                onClick={() => setShowPasswordModal(true)}
+              >
+                🔒 Change Password
+              </Button>
             </div>
           </div>
         </div>
@@ -271,6 +335,66 @@ const UserProfile = () => {
           )}
         </div>
       </div>
+      {/* CHANGE PASSWORD MODAL */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        title="Update Security"
+      >
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <Input
+            label="Current Password"
+            type="password"
+            required
+            value={passwordData.currentPassword}
+            onChange={(e) =>
+              setPasswordData({
+                ...passwordData,
+                currentPassword: e.target.value,
+              })
+            }
+          />
+          <hr className="border-gray-100" />
+          <Input
+            label="New Password"
+            type="password"
+            required
+            value={passwordData.newPassword}
+            onChange={(e) =>
+              setPasswordData({ ...passwordData, newPassword: e.target.value })
+            }
+          />
+          <Input
+            label="Confirm New Password"
+            type="password"
+            required
+            value={passwordData.confirmPassword}
+            onChange={(e) =>
+              setPasswordData({
+                ...passwordData,
+                confirmPassword: e.target.value,
+              })
+            }
+          />
+          <div className="pt-4 flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setShowPasswordModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              className="flex-1"
+              disabled={passwordLoading}
+            >
+              {passwordLoading ? "Updating..." : "Update Password"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -1,206 +1,129 @@
 from sqlalchemy.orm import Session
 from decimal import Decimal
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from fastapi import HTTPException, status
 from ..models.game import Bet, Game
 from ..models.user import User
 from ..models.wallet import Wallet, WalletType
 from .limit_service import limit_service
-# from ..services import jackpot_service
 from .jackpot_service import jackpot_service
+
 class WalletService:
-    """Server-authoritative wallet service with atomic transactions"""
+    """Server-authoritative wallet service with multi-tenant support"""
     
     @staticmethod
     def get_user_tax_rate(db: Session, user_id: int) -> Decimal:
-        """Fetch tax rate directly from the user's assigned region"""
+        """Fetch tax rate from the user's assigned region"""
         user = db.query(User).filter(User.user_id == user_id).first()
-        # If user has a region assigned, use that tax rate, otherwise 0
         if user and user.region:
-            return user.region.tax_rate
+            return Decimal(str(user.region.tax_rate))
         return Decimal("0")
     
     @staticmethod
-    def create_wallets_for_user(db: Session, user_id: int) -> list[Wallet]:
-        """Create all wallet types for a new user"""
+    def create_wallets_for_user(db: Session, user_id: int, tenant_id: int) -> List[Wallet]:
+        """Create separate wallet types for a user under a specific tenant"""
         wallet_types = [WalletType.cash, WalletType.bonus, WalletType.points]
         wallets = []
         
         for wallet_type in wallet_types:
-            initial_balance = Decimal("200.00") if wallet_type == WalletType.bonus else Decimal("0.00")
-            wallet = Wallet(
-                user_id=user_id,
-                balance=initial_balance,
+            # Check if this specific wallet already exists for this tenant
+            existing = db.query(Wallet).filter_by(
+                user_id=user_id, 
+                tenant_id=tenant_id, 
                 type_of_wallet=wallet_type
-            )
-            db.add(wallet)
-            wallets.append(wallet)
+            ).first()
+            
+            if not existing:
+                initial_balance = Decimal("200.00") if wallet_type == WalletType.bonus else Decimal("0.00")
+                wallet = Wallet(
+                    user_id=user_id,
+                    tenant_id=tenant_id, # Link to specific casino
+                    balance=initial_balance,
+                    type_of_wallet=wallet_type
+                )
+                db.add(wallet)
+                wallets.append(wallet)
         
         db.commit()
-        for wallet in wallets:
-            db.refresh(wallet)
-        # return wallets
+        return wallets
     
     @staticmethod
     def get_wallet(
         db: Session,
         user_id: int,
+        tenant_id: int, # Filter by current casino
         type_of_wallet: WalletType = WalletType.cash
     ) -> Optional[Wallet]:
-        """Get a specific wallet for a user"""
+        """Get a specific wallet for a user within a specific tenant"""
         return db.query(Wallet).filter(
             Wallet.user_id == user_id,
+            Wallet.tenant_id == tenant_id,
             Wallet.type_of_wallet == type_of_wallet
         ).first()
     
     @staticmethod
-    def get_all_wallets(db: Session, user_id: int) -> list[Wallet]:
-        """Get all wallets for a user"""
-        return db.query(Wallet).filter(Wallet.user_id == user_id).all()
+    def get_all_wallets(db: Session, user_id: int, tenant_id: int) -> List[Wallet]:
+        """Get all wallets for a user in the active casino"""
+        return db.query(Wallet).filter(
+            Wallet.user_id == user_id,
+            Wallet.tenant_id == tenant_id
+        ).all()
     
     @staticmethod
-    def credit_wallet(
-        db: Session,
-        wallet_id: int,
-        amount: Decimal,
-        commit: bool = True
-    ) -> Wallet:
+    def credit_wallet(db: Session, wallet_id: int, amount: Decimal, commit: bool = True) -> Wallet:
         """Credit amount to wallet (atomic)"""
         if amount <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Amount must be positive"
-            )
+            raise HTTPException(status_code=400, detail="Amount must be positive")
         
-        # Lock the row for update
-        wallet = db.query(Wallet).filter(
-            Wallet.wallet_id == wallet_id
-        ).with_for_update().first()
-        
+        wallet = db.query(Wallet).filter(Wallet.wallet_id == wallet_id).with_for_update().first()
         if not wallet:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Wallet not found"
-            )
+            raise HTTPException(status_code=404, detail="Wallet not found")
         
         wallet.balance += amount
-        
         if commit:
             db.commit()
             db.refresh(wallet)
-        
         return wallet
     
     @staticmethod
-    def debit_wallet(
-        db: Session,
-        wallet_id: int,
-        amount: Decimal,
-        commit: bool = True
-    ) -> Wallet:
-        """Debit amount from wallet (atomic with balance check)"""
+    def debit_wallet(db: Session, wallet_id: int, amount: Decimal, commit: bool = True) -> Wallet:
+        """Debit amount from wallet (atomic with limit and balance check)"""
         if amount <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Amount must be positive"
-            )
+            raise HTTPException(status_code=400, detail="Amount must be positive")
         
-        # Lock the row for update
-        wallet = db.query(Wallet).filter(
-            Wallet.wallet_id == wallet_id
-        ).with_for_update().first()
-        
+        wallet = db.query(Wallet).filter(Wallet.wallet_id == wallet_id).with_for_update().first()
         if not wallet:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Wallet not found"
-            )
+            raise HTTPException(status_code=404, detail="Wallet not found")
         
+        # Check Responsible Gaming Limits
         if wallet.type_of_wallet == WalletType.cash:
             limit_service.check_bet_limits(db, wallet.user_id, amount)
 
         if wallet.balance < amount:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Insufficient balance"
-            )
+            raise HTTPException(status_code=400, detail="Insufficient balance")
         
         wallet.balance -= amount
-        
         if commit:
             db.commit()
             db.refresh(wallet)
-        
         return wallet
-    
-    @staticmethod
-    def transfer_between_wallets(
-        db: Session,
-        from_wallet_id: int,
-        to_wallet_id: int,
-        amount: Decimal
-    ) -> tuple[Wallet, Wallet]:
-        """Transfer amount between wallets (atomic transaction)"""
-        if amount <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Amount must be positive"
-            )
-        
-        try:
-            # Debit from source (this locks the row)
-            from_wallet = WalletService.debit_wallet(db, from_wallet_id, amount, commit=False)
-            
-            # Credit to destination (this locks the row)
-            to_wallet = WalletService.credit_wallet(db, to_wallet_id, amount, commit=False)
-            
-            # Commit both operations atomically
-            db.commit()
-            db.refresh(from_wallet)
-            db.refresh(to_wallet)
-            
-            return from_wallet, to_wallet
-        
-        except Exception as e:
-            db.rollback()
-            raise e
-    
-    @staticmethod
-    def get_balance(db: Session, wallet_id: int) -> Decimal:
-        """Get current balance"""
-        wallet = db.query(Wallet).filter(Wallet.wallet_id == wallet_id).first()
-        if not wallet:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Wallet not found"
-            )
-        return wallet.balance
-
 
     @staticmethod
-    def credit_winnings(db: Session, user_id: int, amount: Decimal, game_id: int, bet_id: int = None):
-        """
-        1. Applies Game RTP
-        2. Credits Net to Wallet after step 1
-        """
-        # 1. Apply RTP (Return to Player) 
-        
-        # Fetch the game to get its specific RTP percentage
+    def credit_winnings(db: Session, user_id: int, amount: Decimal, game_id: int, tenant_id: int, bet_id: int = None):
+        """Apply RTP and credit net payout to the user's specific tenant cash wallet"""
         game = db.query(Game).filter(Game.game_id == game_id).first()
         rtp_multiplier = (game.rtp_percent / Decimal("100")) if game else Decimal("1")
-        
-        # Gross amount after RTP reduction
         net_payout = (amount * rtp_multiplier).quantize(Decimal("0.01"))
-        
 
-        # Update Bet record if ID provided
         if bet_id:
             bet = db.query(Bet).filter(Bet.bet_id == bet_id).first()
             if bet:
                 bet.payout_amount = net_payout
                 
+        # Find the specific cash wallet for THIS tenant
         wallet = db.query(Wallet).filter(
             Wallet.user_id == user_id, 
+            Wallet.tenant_id == tenant_id,
             Wallet.type_of_wallet == WalletType.cash
         ).with_for_update().first()
         
@@ -211,84 +134,69 @@ class WalletService:
         return wallet
 
     @staticmethod
-    def process_game_bet(db: Session, user_id: int, total_bet: Decimal) -> Dict:
+    def process_game_bet(db: Session, user_id: int, tenant_id: int, total_bet: Decimal) -> Dict:
         """
-        HYBRID BETTING LOGIC:
-        1. Max 20% can come from Bonus + Points.
-        2. Remainder must come from Cash.
-        3. Earn Points (e.g., 1% of bet amount).
+        HYBRID BETTING LOGIC (Tenant-Specific):
+        1. Checks limits.
+        2. Deducts up to 20% from Bonus/Points of the CURRENT tenant.
+        3. Remainder from Cash of the CURRENT tenant.
         """
         if total_bet <= 0:
             raise HTTPException(status_code=400, detail="Bet amount must be positive")
         
-        # This will block the user, if limits are exceeded
         limit_service.check_bet_limits(db, user_id, total_bet)
 
-        # 1. Fetch all wallets
-        wallets = db.query(Wallet).filter(Wallet.user_id == user_id).all()
+        # Fetch wallets ONLY for the active tenant
+        wallets = db.query(Wallet).filter(Wallet.user_id == user_id, Wallet.tenant_id == tenant_id).all()
         cash_wallet = next((w for w in wallets if w.type_of_wallet == WalletType.cash), None)
         bonus_wallet = next((w for w in wallets if w.type_of_wallet == WalletType.bonus), None)
         points_wallet = next((w for w in wallets if w.type_of_wallet == WalletType.points), None)
 
         if not cash_wallet:
-            raise HTTPException(status_code=404, detail="Cash wallet not found")
+            raise HTTPException(status_code=404, detail="Cash wallet for this casino not found")
 
-        # 2. Calculate Split
-        # Max promo allowed is 20%
         max_promo_allowance = total_bet * Decimal("0.20")
-        
         deducted_bonus = Decimal("0")
         deducted_points = Decimal("0")
         
-        # Priority: Use Bonus first, then Points
         if bonus_wallet and bonus_wallet.balance > 0:
             deducted_bonus = min(bonus_wallet.balance, max_promo_allowance)
         
         remaining_promo_allowance = max_promo_allowance - deducted_bonus
-        
-        if points_wallet and points_wallet.balance > 10 and remaining_promo_allowance > 0:
-            # 10 Point = $1 for betting purposes
-            deducted_points = min(points_wallet.balance//10, remaining_promo_allowance)
+        if points_wallet and points_wallet.balance >= 10 and remaining_promo_allowance > 0:
+            # 10 Points = $1
+            deducted_points = min(points_wallet.balance // 10, remaining_promo_allowance)
 
-        # The rest must come from Cash
         required_cash = total_bet - (deducted_bonus + deducted_points)
 
-        # 3. Check Cash Balance
         if cash_wallet.balance < required_cash:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Insufficient cash. Need ${required_cash} in cash wallet (Promos cover ${deducted_bonus + deducted_points})"
+                detail=f"Insufficient cash in this casino. Need ${required_cash} (Promos cover ${deducted_bonus + deducted_points})"
             )
 
-        # 4. Execute Deductions (Updates objects in session)
+        # Execution
         cash_wallet.balance -= required_cash
         if bonus_wallet:
             bonus_wallet.balance -= deducted_bonus
         if points_wallet:
-            points_wallet.balance -= deducted_points*10  # Convert back to points
+            points_wallet.balance -= (deducted_points * 10)
         
-        # 5. Process Jackpot Logic if real cash was used
-        user = db.query(User).filter(User.user_id == user_id).first()
-        jackpot_result = {"won": False}
-        if user and required_cash > 0:
-             jackpot_result = jackpot_service.process_spin(
-                 db, user_id, user.tenant_id, required_cash
-             )
-        # 5. Award New Points (Loyalty Program)
-        # Rule: Earn 1 Point for every $10 bet (10% ratio).
+        # Jackpot Logic (Real cash used in current tenant)
+        jackpot_result = jackpot_service.process_spin(db, user_id, tenant_id, required_cash)
+        
+        # Loyalty Points (Earned in current tenant)
         points_earned = total_bet * Decimal("0.10")
         if points_wallet:
             points_wallet.balance += points_earned
 
-        # 6. Commit Transaction
         db.commit()
         
-        # Return Cash Wallet ID for foreign key in Bet table, and details
         return {
             "primary_wallet_id": cash_wallet.wallet_id,
             "deducted_cash": required_cash,
             "deducted_bonus": deducted_bonus,
-            "deducted_points": deducted_points*10,
+            "deducted_points": deducted_points * 10,
             "points_earned": points_earned,
             "jackpot_result": jackpot_result
         }

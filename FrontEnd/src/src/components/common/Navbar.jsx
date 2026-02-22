@@ -3,6 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useWallet } from "../../hooks/useWallet";
 import { formatCurrency } from "../../utils/helpers";
 import { useMemo } from "react";
+import TenantSwitcher from "./TenantSwitcher";
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin, isCasinoOwner, currency } =
@@ -57,14 +58,10 @@ const Navbar = () => {
                     Profile
                   </Link>
                 ) : isCasinoOwner ? (
-                  <Link
-                    to="/owner-profile"
-                    className="px-4 py-2 bg-pink-500 rounded-lg"
-                  >
-                    Profile
-                  </Link>
+                  <></>
                 ) : (
                   <>
+                    <TenantSwitcher />
                     <Link
                       to="/games"
                       className="px-4 py-2 rounded-lg bg-pink-500 transition-colors"

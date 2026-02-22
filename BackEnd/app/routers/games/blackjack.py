@@ -57,7 +57,7 @@ async def start_blackjack_game(
     
     # # Debit bet amount
     # wallet_service.debit_wallet(db, wallet.wallet_id, bet_amount)
-    txn_details = wallet_service.process_game_bet(db, current_user.user_id, bet_amount)
+    txn_details = wallet_service.process_game_bet(db, current_user.user_id, current_user.tenant_id, bet_amount)
     
     # Create game session
     session = GameSession(
@@ -135,7 +135,7 @@ async def hit(
         
         # If game over, settle
         if game_state["game_over"]:
-            await _settle_blackjack_game(session_id, engine, current_user.user_id, db)
+            await _settle_blackjack_game(session_id, engine, current_user.user_id, current_user.tenant_id, db)
         
         return {"game_state": game_state}
     
@@ -174,7 +174,7 @@ async def stand(
     
     try:
         game_state = engine.stand()
-        await _settle_blackjack_game(session_id, engine, current_user.user_id, db)
+        await _settle_blackjack_game(session_id, engine, current_user.user_id, current_user.tenant_id, db)
         
         return {"game_state": game_state}
     
@@ -220,7 +220,7 @@ async def double_down(
     original_amount = bet.bet_amount
     
     # Get wallet and debit additional amount
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+    wallet = wallet_service.get_wallet(db, current_user.user_id,current_user.tenant_id, WalletType.cash)
     wallet_service.debit_wallet(db, wallet.wallet_id, original_amount)
     
     # Update bet amount
@@ -229,7 +229,7 @@ async def double_down(
     
     try:
         game_state = engine.double_down()
-        await _settle_blackjack_game(session_id, engine, current_user.user_id, db)
+        await _settle_blackjack_game(session_id, engine, current_user.user_id, current_user.tenant_id, db)
         
         return {"game_state": game_state}
     
@@ -241,7 +241,7 @@ async def double_down(
             detail=str(e)
         )
 
-async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine,user_id:int, db: Session):
+async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine,user_id:int, tenant_id: int, db: Session):
     """Settle blackjack game and update wallet"""
     
     # Get bet
@@ -266,7 +266,7 @@ async def _settle_blackjack_game(session_id: int, engine: BlackjackEngine,user_i
     
     # Credit payout to wallet
     if payout > 0:
-        wallet_service.credit_winnings(db, user_id, payout, game.game_id, bet.bet_id)
+        wallet_service.credit_winnings(db, user_id, payout, game.game_id, tenant_id, bet.bet_id)
     
     # Close session
     session = db.query(GameSession).filter(

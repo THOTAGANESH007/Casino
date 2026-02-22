@@ -34,10 +34,15 @@ async def create_tenant(
     db: Session = Depends(get_db),
     admin: User = Depends(require_casino_owner)
 ):
-    """Create a new tenant"""
+    """Create a new tenant under a specific region"""
+    # Verify region exists
+    region = db.query(TenantRegion).filter(TenantRegion.region_id == tenant_data.region_id).first()
+    if not region:
+        raise HTTPException(status_code=400, detail="Invalid region_id provided")
     
     new_tenant = Tenant(
         tenant_name=tenant_data.tenant_name,
+        region_id=tenant_data.region_id,
         default_timezone=tenant_data.default_timezone,
         default_currency=tenant_data.default_currency,
         status=True
@@ -54,8 +59,10 @@ async def get_all_tenants(
     db: Session = Depends(get_db),
     # admin: User = Depends(require_casino_owner)
 ):
-    """Get all tenants"""
+    """Get all tenants across all regions"""
     tenants = db.query(Tenant).all()
+    for tenant in tenants:
+        print(f"Tenant: {tenant.tenant_name}, Region: {tenant.region.region_name if tenant.region else 'N/A'}")
     return tenants
 
 @router.get("/tenants/{tenant_id}", response_model=TenantResponse)
@@ -101,18 +108,9 @@ async def create_region(
     db: Session = Depends(get_db),
     admin: User = Depends(require_casino_owner)
 ):
-    """Create a new region for a tenant"""
-    
-    # Verify tenant exists
-    tenant = db.query(Tenant).filter(Tenant.tenant_id == region_data.tenant_id).first()
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found"
-        )
+    """Create a global region. Tenants will be added to this later."""
     
     new_region = TenantRegion(
-        tenant_id=region_data.tenant_id,
         tax_rate=region_data.tax_rate,
         region_name=region_data.region_name
     )
@@ -125,17 +123,11 @@ async def create_region(
 
 @router.get("/regions", response_model=List[RegionResponse])
 async def get_all_regions(
-    tenant_id: int = None,
     db: Session = Depends(get_db),
     # admin: User = Depends(require_casino_owner)
 ):
     """Get all regions, optionally filtered by tenant"""
-    query = db.query(TenantRegion)
-    if tenant_id:
-        query = query.filter(TenantRegion.tenant_id == tenant_id)
-    
-    regions = query.all()
-    return regions
+    return db.query(TenantRegion).all()
 
 
 # Update region tax rate
@@ -188,9 +180,10 @@ async def get_pending_kyc(
     db: Session = Depends(get_db),
     admin: User = Depends(require_tenant_admin)
 ):
-    """Get all pending KYC verifications"""
-    pending_kyc = db.query(UserKYC).filter(
-        UserKYC.verified_status == False
+    """Get all pending KYC verifications for players 
+    belonging to the admin's specific region."""
+    pending_kyc = db.query(UserKYC).join(User).filter(
+        UserKYC.verified_status == False, User.region_id == admin.region_id
     ).all()
     
     result = []
@@ -202,14 +195,21 @@ async def get_pending_kyc(
             "user_name": f"{user.first_name} {user.last_name or ''}",
             "email": user.email,
             "document_type": kyc.document_type,
-            "document_number": kyc.document_number
+            "document_number": kyc.document_number,
+            "document_url": kyc.document_url,
+            "parsed_number": kyc.parsed_number
         })
     
     return result
+
 @router.post("/kyc/{kyc_id}/parse")
-async def admin_parse_kyc(kyc_id: int, db: Session = Depends(get_db)):
+async def admin_parse_kyc(kyc_id: int, db: Session = Depends(get_db), admin: User = Depends(require_tenant_admin)):
     kyc = db.query(UserKYC).filter(UserKYC.kyc_id == kyc_id).first()
-    extracted_no = KYCService.parse_document(kyc.document_url, kyc.document_type)
+    if not kyc:
+        raise HTTPException(status_code=404, detail="KYC not found")
+
+    # Run OCR Service to extract number from PDF
+    extracted_no = KYCService.extract_number_from_pdf(kyc.document_url, kyc.document_type)
     
     kyc.parsed_number = extracted_no
     db.commit()

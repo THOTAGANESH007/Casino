@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ownerAPI } from "../../api/owner";
 import Button from "../common/Button";
 import Input from "../common/Input";
@@ -9,7 +9,6 @@ import SuccessMessage from "../common/SuccessMessage";
 const TIMEZONE_CURRENCY_MAP = {
   UTC: "USD",
   GMT: "GBP",
-  // North America
   "America/New_York": "USD",
   "America/Chicago": "USD",
   "America/Denver": "USD",
@@ -17,11 +16,9 @@ const TIMEZONE_CURRENCY_MAP = {
   "America/Toronto": "CAD",
   "America/Vancouver": "CAD",
   "America/Mexico_City": "MXN",
-  // South America
   "America/Sao_Paulo": "BRL",
   "America/Buenos_Aires": "ARS",
   "America/Bogota": "COP",
-  // Europe
   "Europe/London": "GBP",
   "Europe/Paris": "EUR",
   "Europe/Berlin": "EUR",
@@ -30,7 +27,6 @@ const TIMEZONE_CURRENCY_MAP = {
   "Europe/Amsterdam": "EUR",
   "Europe/Moscow": "RUB",
   "Europe/Istanbul": "TRY",
-  // Asia
   "Asia/Dubai": "AED",
   "Asia/Kolkata": "INR",
   "Asia/Bangkok": "THB",
@@ -40,38 +36,53 @@ const TIMEZONE_CURRENCY_MAP = {
   "Asia/Seoul": "KRW",
   "Asia/Jakarta": "IDR",
   "Asia/Manila": "PHP",
-  // Oceania
   "Australia/Sydney": "AUD",
   "Australia/Melbourne": "AUD",
   "Australia/Perth": "AUD",
   "Pacific/Auckland": "NZD",
   "Pacific/Honolulu": "USD",
-  // Africa
   "Africa/Cairo": "EGP",
   "Africa/Johannesburg": "ZAR",
   "Africa/Lagos": "NGN",
   "Africa/Nairobi": "KES",
 };
 
-// Generate options list from the map keys
 const COMMON_TIMEZONES = Object.keys(TIMEZONE_CURRENCY_MAP);
 
 const CreateTenantForm = ({ onSuccess }) => {
+  const [regions, setRegions] = useState([]);
   const [formData, setFormData] = useState({
     tenant_name: "",
+    region_id: "", // Required field
     default_timezone: "UTC",
     default_currency: "USD",
   });
 
   const [loading, setLoading] = useState(false);
+  const [fetchingRegions, setFetchingRegions] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Handler: When Timezone changes, Auto-fill Currency
+  // Fetch available regions on component mount
+  useEffect(() => {
+    const fetchRegions = async () => {
+      try {
+        setFetchingRegions(true);
+        const data = await ownerAPI.getRegions();
+        setRegions(data);
+      } catch (err) {
+        setError(
+          "Failed to load regions. Ensure at least one region is created.",
+        );
+      } finally {
+        setFetchingRegions(false);
+      }
+    };
+    fetchRegions();
+  }, []);
+
   const handleTimezoneChange = (e) => {
     const newTimezone = e.target.value;
-
-    // Lookup currency, default to current value or USD if not found
     const autoCurrency = TIMEZONE_CURRENCY_MAP[newTimezone] || "USD";
 
     setFormData({
@@ -83,19 +94,29 @@ const CreateTenantForm = ({ onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.region_id) {
+      setError("Please select a valid region for this tenant.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      // Send data directly (currency is already a string)
-      await ownerAPI.createTenant(formData);
+      // Send data to backend, converting region_id to integer
+      await ownerAPI.createTenant({
+        ...formData,
+        region_id: parseInt(formData.region_id),
+      });
 
-      setSuccess("Tenant created successfully");
+      setSuccess(`Tenant "${formData.tenant_name}" created successfully!`);
 
-      // Reset form to defaults
+      // Reset form
       setFormData({
         tenant_name: "",
+        region_id: "",
         default_timezone: "UTC",
         default_currency: "USD",
       });
@@ -104,17 +125,12 @@ const CreateTenantForm = ({ onSuccess }) => {
         setTimeout(() => onSuccess(), 1000);
       }
     } catch (err) {
-      if (err.response?.data?.detail) {
-        const detail = err.response.data.detail;
-        if (Array.isArray(detail)) {
-          // Format Pydantic/FastAPI validation errors
-          setError(detail.map((d) => `${d.loc[1]}: ${d.msg}`).join(", "));
-        } else {
-          setError(detail);
-        }
-      } else {
-        setError("Failed to create tenant. Please check your connection.");
-      }
+      const msg = err.response?.data?.detail;
+      setError(
+        Array.isArray(msg)
+          ? msg.map((d) => d.msg).join(", ")
+          : msg || "Failed to create tenant.",
+      );
     } finally {
       setLoading(false);
     }
@@ -123,15 +139,16 @@ const CreateTenantForm = ({ onSuccess }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 fade-in">
       <h3 className="text-xl font-bold text-gray-900 mb-6">
-        Create New Tenant
+        Create New Tenant Brand
       </h3>
 
       <ErrorMessage message={error} onClose={() => setError("")} />
       <SuccessMessage message={success} onClose={() => setSuccess("")} />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
+        {/* Brand Name */}
         <Input
-          label="Tenant Name"
+          label="Tenant / Brand Name"
           type="text"
           value={formData.tenant_name}
           onChange={(e) =>
@@ -140,6 +157,36 @@ const CreateTenantForm = ({ onSuccess }) => {
           required
           placeholder="e.g., LuckySpins Casino"
         />
+
+        {/* Region Selection (Parent) */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Assign to Region <span className="text-red-600">*</span>
+          </label>
+          <div className="relative">
+            <select
+              value={formData.region_id}
+              onChange={(e) =>
+                setFormData({ ...formData, region_id: e.target.value })
+              }
+              required
+              disabled={fetchingRegions}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white disabled:bg-gray-100"
+            >
+              <option value="">
+                {fetchingRegions ? "Loading regions..." : "-- Select Region --"}
+              </option>
+              {regions.map((region) => (
+                <option key={region.region_id} value={region.region_id}>
+                  {region.region_name} (Tax: {region.tax_rate}%)
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            This tenant will only be visible to users in this selected region.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Timezone Dropdown */}
@@ -155,19 +202,10 @@ const CreateTenantForm = ({ onSuccess }) => {
               >
                 {COMMON_TIMEZONES.map((tz) => (
                   <option key={tz} value={tz}>
-                    {tz.replace("_", " ")}
+                    {tz}
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
             </div>
           </div>
 
@@ -182,17 +220,14 @@ const CreateTenantForm = ({ onSuccess }) => {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  default_currency: e.target.value.toUpperCase(), // Force Uppercase
+                  default_currency: e.target.value.toUpperCase(),
                 })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
               placeholder="e.g. USD"
-              maxLength={3} // ISO codes are usually 3 chars
+              maxLength={3}
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Auto-filled based on timezone, but you can edit it.
-            </p>
           </div>
         </div>
 
@@ -201,7 +236,7 @@ const CreateTenantForm = ({ onSuccess }) => {
             type="submit"
             variant="primary"
             size="lg"
-            disabled={loading}
+            disabled={loading || fetchingRegions}
             className="w-full md:w-auto"
           >
             {loading ? "Creating..." : "Create Tenant"}

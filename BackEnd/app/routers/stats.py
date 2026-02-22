@@ -122,15 +122,20 @@ async def get_owner_profile(
     liquidity = db.query(func.sum(Wallet.balance))\
         .filter(Wallet.type_of_wallet == WalletType.cash).scalar() or 0
 
-    # 5. Tenant Leaderboard (Ranked by Turnover)
+    # 5. Tenant Leaderboard (Ranked by Turnover) - Including ALL tenants
     leaderboard_query = db.query(
         Tenant.tenant_name,
         func.count(func.distinct(User.user_id)).label("user_count"),
-        func.sum(Bet.bet_amount).label("turnover"),
-        func.sum(Bet.bet_amount - Bet.payout_amount).label("revenue")
-    ).select_from(Tenant).join(User).join(GameSession).join(GameRound).join(Bet)\
+        func.coalesce(func.sum(Bet.bet_amount), 0).label("turnover"),
+        func.coalesce(func.sum(Bet.bet_amount - Bet.payout_amount), 0).label("revenue")
+    ).select_from(Tenant)\
+     .outerjoin(User)\
+     .outerjoin(GameSession)\
+     .outerjoin(GameRound)\
+     .outerjoin(Bet)\
      .group_by(Tenant.tenant_name)\
-     .order_by(desc("turnover")).limit(10).all()
+     .order_by(desc("turnover"))\
+     .all()
 
     # 6. Global Top Games (Ranked by Revenue)
     top_games = db.query(

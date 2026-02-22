@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ownerAPI } from "../../api/owner"; // Switched to ownerAPI
-import CreateTenantForm from "./CreateTenantForm"; // Import the separated form
+import { ownerAPI } from "../../api/owner";
+import CreateTenantForm from "./CreateTenantForm";
 import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
 import SuccessMessage from "../common/SuccessMessage";
@@ -23,6 +23,7 @@ const TenantManagement = () => {
     try {
       setLoading(true);
       const data = await ownerAPI.getTenants();
+      console.log("Fetched tenants:", data);
       setTenants(data);
       setError("");
     } catch (err) {
@@ -32,11 +33,6 @@ const TenantManagement = () => {
     }
   };
 
-  const handleCreateSuccess = () => {
-    setShowForm(false);
-    fetchTenants();
-  };
-
   const toggleStatus = async (tenantId, currentStatus) => {
     try {
       await ownerAPI.updateTenantStatus(tenantId, !currentStatus);
@@ -44,7 +40,7 @@ const TenantManagement = () => {
       fetchTenants();
       setTimeout(() => setStatusMsg(""), 3000);
     } catch (err) {
-      setError("Failed to update tenant status");
+      setError("Failed to update status");
     }
   };
 
@@ -56,24 +52,28 @@ const TenantManagement = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Tenant Management
+            Casino Brands (Tenants)
           </h2>
           <p className="text-gray-500 text-sm">
-            Manage casino sites and configurations
+            Manage casino branches and regional assignments
           </p>
         </div>
         <Button onClick={() => setShowForm(!showForm)} variant="primary">
-          {showForm ? "Hide Form" : "+ Create Tenant"}
+          {showForm ? "Hide Form" : "+ Add New Casino Brand"}
         </Button>
       </div>
 
       <ErrorMessage message={error} onClose={() => setError("")} />
       <SuccessMessage message={statusMsg} onClose={() => setStatusMsg("")} />
 
-      {/* Render the separated form component */}
       {showForm && (
         <div className="mb-8">
-          <CreateTenantForm onSuccess={handleCreateSuccess} />
+          <CreateTenantForm
+            onSuccess={() => {
+              setShowForm(false);
+              fetchTenants();
+            }}
+          />
         </div>
       )}
 
@@ -86,16 +86,16 @@ const TenantManagement = () => {
                   ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Name
+                  Brand Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Timezone
+                  Operating Region
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Currency
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Created
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Actions
@@ -108,47 +108,37 @@ const TenantManagement = () => {
                   key={tenant.tenant_id}
                   className="hover:bg-gray-50 transition-colors"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 text-sm text-gray-900">
                     #{tenant.tenant_id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800">
+                  <td className="px-6 py-4 text-sm font-bold text-gray-800">
                     {tenant.tenant_name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {tenant.default_timezone}
+                  <td className="px-6 py-4 text-sm text-indigo-600 font-semibold">
+                    {/* Assuming backend returns region object or we just show the ID */}
+                    {tenant.region_name || `Region ID: ${tenant.region_id}`}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-6 py-4 text-sm font-mono text-gray-600">
+                    {tenant.default_currency}
+                  </td>
+                  <td className="px-6 py-4">
                     <Badge variant={tenant.status ? "success" : "danger"}>
                       {tenant.status ? "Active" : "Inactive"}
                     </Badge>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatDateTime(tenant.created_at)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-6 py-4">
                     <Button
                       onClick={() =>
                         toggleStatus(tenant.tenant_id, tenant.status)
                       }
                       variant={tenant.status ? "danger" : "success"}
                       size="sm"
-                      className="min-w-20"
                     >
                       {tenant.status ? "Disable" : "Enable"}
                     </Button>
                   </td>
                 </tr>
               ))}
-              {tenants.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    No tenants found. Create one to get started.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>

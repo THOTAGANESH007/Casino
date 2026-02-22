@@ -1,3 +1,4 @@
+import { data } from "react-router-dom";
 import api from "./axios";
 
 export const userAPI = {
@@ -10,9 +11,12 @@ export const userAPI = {
     return response.data;
   },
   getActiveSessions: async () => {
-    const response = await api.get(
-      "/user/active-sessions"
-    );
+    const response = await api.get("/user/active-sessions");
+    return response.data;
+  },
+
+  changePassword: async (data) => {
+    const response = await api.put("/user/change-password", data);
     return response.data;
   },
 };

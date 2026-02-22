@@ -46,7 +46,7 @@ async def spin_roulette(
         db.refresh(game)
     
     # Get user's cash wallet
-    wallet = wallet_service.get_wallet(db, current_user.user_id, WalletType.cash)
+    wallet = wallet_service.get_wallet(db, current_user.user_id, current_user.tenant_id, WalletType.cash)
     if not wallet:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -57,7 +57,7 @@ async def spin_roulette(
     total_bet_amount = sum(bet.bet_amount for bet in spin_data.bets)
 
     # Debit using hybrid logic
-    txn_details = wallet_service.process_game_bet(db, current_user.user_id, total_bet_amount)
+    txn_details = wallet_service.process_game_bet(db, current_user.user_id, current_user.tenant_id, total_bet_amount)
     
     # Create game session
     session = GameSession(
@@ -104,7 +104,7 @@ async def spin_roulette(
     
     # Credit total payout to wallet if any wins
     if result["total_payout"] > 0:
-        wallet_service.credit_winnings(db, current_user.user_id, result["total_payout"],game.game_id, bet_record.bet_id)
+        wallet_service.credit_winnings(db, current_user.user_id, result["total_payout"],game.game_id, current_user.tenant_id, bet_record.bet_id)
     
     # Close session
     session.ended_at = datetime.now(timezone.utc)

@@ -22,11 +22,20 @@ const KYCSubmit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!file) {
+      setError("Please upload your PDF document.");
+      return;
+    }
     setError("");
     setSubmitting(true);
 
+    const data = new FormData();
+    data.append("document_type", formData.document_type);
+    data.append("document_number", formData.document_number);
+    data.append("file", file);
+
     try {
-      await authAPI.submitKYC(formData);
+      await authAPI.submitKYC(data);
       navigate("/pending-verification");
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to submit KYC");
@@ -46,7 +55,7 @@ const KYCSubmit = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-50 to-purple-50 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-600 to-purple-600 py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">📄</div>

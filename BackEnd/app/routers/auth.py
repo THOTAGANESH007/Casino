@@ -9,7 +9,7 @@ from ..utils.security import get_password_hash, verify_password, create_access_t
 from ..utils.dependencies import get_current_user
 from ..services.wallet_service import wallet_service
 from ..config import settings
-from ..models.tenant import TenantRegion
+from ..models.tenant import Tenant, TenantRegion
 from ..models.user import UserKYC
 from ..services.email_service import email_service
 import random
@@ -78,12 +78,23 @@ async def select_region(
             detail="Region not found"
         )
     
+    # 2. Verify selected Tenant belongs to that Region
+    tenant = db.query(Tenant).filter(
+        Tenant.tenant_id == region_data.tenant_id,
+        Tenant.region_id == region_data.region_id
+    ).first()
+
+    if not tenant:
+        raise HTTPException(
+            status_code=400, 
+            detail="The selected casino is not available in your region"
+        )
     # Assign tenant and save the region of the user
-    current_user.tenant_id = region.tenant_id
+    current_user.tenant_id = tenant.tenant_id
     current_user.region_id = region.region_id
     
     # Create wallets for the user
-    wallet_service.create_wallets_for_user(db, current_user.user_id)
+    wallet_service.create_wallets_for_user(db, current_user.user_id, tenant.tenant_id)
     
     db.commit()
     db.refresh(current_user)
@@ -138,6 +149,79 @@ async def submit_kyc(
     db.commit()
     
     return {"message": "KYC submitted successfully. Awaiting admin approval."}
+
+@router.post("/switch-tenant/{tenant_id}")
+async def switch_tenant(
+    tenant_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Switching Casino: User stays in their region but picks a different tenant.
+    """
+    # 1. Verify tenant is active and in the user's fixed region
+    tenant = db.query(Tenant).filter(
+        Tenant.tenant_id == tenant_id,
+        Tenant.region_id == current_user.region_id,
+        Tenant.status == True
+    ).first()
+
+    if not tenant:
+        raise HTTPException(
+            status_code=400, 
+            detail="Casino not found or not licensed in your region"
+        )
+
+    # 2. Update user's active tenant
+    current_user.tenant_id = tenant_id
+
+    # 3. Ensure wallets exist for the new tenant (if first time visiting)
+    wallet_service.create_wallets_for_user(db, current_user.user_id, tenant_id)
+
+    db.commit()
+
+    # 4. Generate a NEW token because the tenant_id inside the token payload has changed
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    new_token = create_access_token(
+        data={"sub": str(current_user.user_id), "tenant_id": tenant_id},
+        expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": new_token, 
+        "token_type": "bearer",
+        "tenant_name": tenant.tenant_name
+    }
+
+@router.get("/available-tenants")
+async def get_available_tenants(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns all active casinos that belong to the user's 
+    specific geographic region.
+    """
+    # 1. Identify the user's region
+    user_region_id = current_user.region_id
+    
+    if not user_region_id:
+        return []
+
+    # 2. Fetch all tenants linked to that region
+    tenants = db.query(Tenant).filter(
+        Tenant.region_id == user_region_id,
+        Tenant.status == True  # Only show active casinos
+    ).all()
+    
+    # 3. Format response for the frontend dropdown
+    return [
+        {
+            "tenant_id": t.tenant_id,
+            "tenant_name": t.tenant_name,
+            "currency": t.default_currency
+        } for t in tenants
+    ]
 
 @router.post("/login", response_model=Token)
 async def login(login_data: UserLogin, db: Session = Depends(get_db)):

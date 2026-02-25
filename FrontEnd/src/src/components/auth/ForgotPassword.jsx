@@ -52,7 +52,7 @@ const ForgotPassword = () => {
     const passwordRegex =
       /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
 
-    if (!passwordRegex.test(formData.password)) {
+    if (!passwordRegex.test(formData.newPassword)) {
       setError(
         "Password must be at least 8 characters and include a letter, number, and special character",
       );

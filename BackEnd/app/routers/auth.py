@@ -288,7 +288,6 @@ async def forgot_password(
     db: Session = Depends(get_db)
 ):
     """Generate OTP and send to email"""
-    print(request)
     user = db.query(User).filter(User.email == request.email).first()
     
     if not user:
